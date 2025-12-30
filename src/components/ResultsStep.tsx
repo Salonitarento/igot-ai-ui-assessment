@@ -48,6 +48,7 @@ interface ResultsStepProps {
   timeLimit: number;
   topics: string[];
   onStartOver: () => void;
+  courseIds?:  string[];
 }
 
 // Sample generated questions data
@@ -149,6 +150,7 @@ const ResultsStep = ({
   timeLimit,
   topics,
   onStartOver,
+  courseIds
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([1]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -198,13 +200,75 @@ const ResultsStep = ({
     setEditForm({ ...editForm, options: newOptions });
   };
 
-  const handleExport = () => {
-    const format = exportFormats.find(f => f.id === selectedFormat);
-    toast({
-      title: `Exporting as ${format?.name}`,
-      description: `Your assessment will be downloaded as a ${format?.name} file.`,
+  // const handleExport = () => {
+  //   const format = exportFormats.find(f => f.id === selectedFormat);
+  //   console.log(format,'format')
+  //   toast({
+  //     title: `Exporting as ${format?.name}`,
+  //     description: `Your assessment will be downloaded as a ${format?.name} file.`,
+  //   });
+  // };
+const handleExport = async () => {
+  try {
+    // const assessmentId = "do_11447034411220992011179";
+
+    let url = "";
+    let fileName = "";
+    let mimeType = "";
+
+    if (selectedFormat === "json") {
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_json/${courseIds}`;
+      fileName = "assessment.json";
+      mimeType = "application/json";
+    }
+
+    if (selectedFormat === "pdf") {
+      // example – update when PDF API is ready
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${courseIds}`;
+      fileName = "assessment.pdf";
+      mimeType = "application/pdf";
+    }
+
+    if (!url) return;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: mimeType,
+      },
     });
-  };
+
+    if (!response.ok) {
+      throw new Error("Failed to download file");
+    }
+
+    const blob = await response.blob();
+
+    // Create download link
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    toast({
+      title: "Download started",
+      description: `Your ${selectedFormat.toUpperCase()} file is downloading.`,
+    });
+  } catch (error) {
+    console.error(error);
+    toast({
+      title: "Download failed",
+      description: "Unable to download the file. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
   if (!isGenerated) {
     return (

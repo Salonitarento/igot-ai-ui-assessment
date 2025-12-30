@@ -10,17 +10,17 @@ import { ListChecks, ToggleLeft, MessageSquare, FileText } from "lucide-react";
 
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
-  { id: "truefalse", name: "True/False", icon: ToggleLeft, enabled: true, count: 5 },
-  { id: "shortanswer", name: "Short Answer", icon: MessageSquare, enabled: false, count: 0 },
-  { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
+  { id: "ftb", name: "Fill in the blanks", icon: ToggleLeft, enabled: true, count: 5 },
+  { id: "mtf", name: "Match the following", icon: MessageSquare, enabled: false, count: 0 },
+  // { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
 ];
 
 const Index = () => {
   const [assessmentType, setAssessmentType] = useState("practice");
   const [currentStep, setCurrentStep] = useState("content");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  
-  const [courseIds, setCourseIds] = useState<string[]>([]);
+  console.log(currentStep,'currentStep')
+  const [courseIds, setCourseIds] = useState<any>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [transcriptFiles, setTranscriptFiles] = useState<File[]>([]);
@@ -59,44 +59,159 @@ const Index = () => {
     setCurrentStep("configuration");
   };
 
-  const handleGenerate = async () => {
-    const bloomTotal = Object.values(bloomValues).reduce((sum, v) => sum + v, 0);
-    const totalQuestions = questionTypes
-      .filter((qt) => qt.enabled)
-      .reduce((sum, qt) => sum + qt.count, 0);
+  // const handleGenerate = async () => {
+  //   const bloomTotal = Object.values(bloomValues).reduce((sum, v) => sum + v, 0);
+  //   const totalQuestions = questionTypes
+  //     .filter((qt) => qt.enabled)
+  //     .reduce((sum, qt) => sum + qt.count, 0);
 
-    if (bloomTotal !== 100) {
-      toast({
-        title: "Invalid Bloom's Distribution",
-        description: `Total must equal 100%. Currently: ${bloomTotal}%`,
-        variant: "destructive",
-      });
-      return;
-    }
+  //   if (bloomTotal !== 100) {
+  //     toast({
+  //       title: "Invalid Bloom's Distribution",
+  //       description: `Total must equal 100%. Currently: ${bloomTotal}%`,
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
 
-    if (totalQuestions === 0) {
-      toast({
-        title: "No Questions Configured",
-        description: "Please add at least one question type.",
-        variant: "destructive",
-      });
-      return;
-    }
+  //   if (totalQuestions === 0) {
+  //     toast({
+  //       title: "No Questions Configured",
+  //       description: "Please add at least one question type.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
 
-    setIsGenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  //   setIsGenerating(true);
+  //   await new Promise((resolve) => setTimeout(resolve, 2000));
     
-    setIsGenerated(true);
-    setCompletedSteps((prev) => [...new Set([...prev, "configuration"])]);
+  //   setIsGenerated(true);
+  //   setCompletedSteps((prev) => [...new Set([...prev, "configuration"])]);
+  //   setCurrentStep("results");
+    
+  //   toast({
+  //     title: "Assessment Generated!",
+  //     description: `${totalQuestions} questions created.`,
+  //   });
+    
+  //   setIsGenerating(false);
+  // };
+const pollGenerationStatus = async (
+  jobId: string,
+  onComplete: (data: any) => void,
+  onError: (error: any) => void
+) => {
+  const poll = async () => {
+    try {
+      const response = await fetch(
+        `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/status/${jobId}`
+      );
+
+      const result = await response.json();
+      console.log("Status response:", result);
+
+      if (result.status === "COMPLETED") {
+        onComplete(result);
+        return;
+      }
+
+      if (result.status === "FAILED") {
+        // onError(result); 
+        onComplete(result);
+        return;
+      }
+      setTimeout(poll, 5000);
+    } catch (err) {
+      onError(err);
+    }
+  };
+
+  poll();
+};
+
+const handleGenerate = async () => {
+  setIsGenerating(true);
+
+  const enabledQuestionTypes = questionTypes
+    .filter(q => q.enabled && q.count > 0)
+    .map(q => q.id);
+  console.log('enabledQuestionTypes',enabledQuestionTypes)
+  const totalQuestions = questionTypes
+    .filter(q => q.enabled)
+    .reduce((sum, q) => sum + q.count, 0);
+
+  const formData = new FormData();
+
+  formData.append("course_ids", courseIds);
+  formData.append("force", "false");
+
+  // 🔹 From this component
+  formData.append("assessment_type", assessmentType);
+  formData.append("difficulty", assessmentLevel);
+  formData.append("total_questions", totalQuestions.toString());
+
+ enabledQuestionTypes.forEach(type => {
+  formData.append("question_types", type);
+});
+
+
+  formData.append("time_limit", timeLimit.toString());
+  formData.append("blooms_config", JSON.stringify(bloomValues));
+
+  // 🔹 Dummy placeholders
+  formData.append("topic_names", JSON.stringify(topics));
+  // formData.append("language", "english");
+  // formData.append("additional_instructions", "Auto-generated");
+
+  try {
+    const response = await fetch(`https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/generate`, {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Generation failed");
+      }
+    
+
+    const result = await response.json();
+    console.log("Generate response:", result);
+ 
+
+  pollGenerationStatus(
+  result.job_id,
+  (completedData) => {
+    console.log("Generation completed:", completedData);
     setCurrentStep("results");
-    
+
+    setIsGenerating(false);
+    setIsGenerated(true);
+
+    setCompletedSteps((prev) =>
+      [...new Set([...prev, "configuration"])]
+    );
+
+
     toast({
       title: "Assessment Generated!",
       description: `${totalQuestions} questions created.`,
     });
+  },
+      (error) => {
+        console.error("Generation failed:", error);
+        setIsGenerating(false);
+      }
+    );
+
     
+
+  } catch (error) {
+    console.error(error);
     setIsGenerating(false);
-  };
+  }
+};
+
 
   const handleStartOver = () => {
     setCurrentStep("content");
@@ -184,6 +299,7 @@ const Index = () => {
             onBack={() => setCurrentStep("content")}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
+
           />
         )}
 
@@ -195,6 +311,7 @@ const Index = () => {
             timeLimit={timeLimit}
             topics={topics}
             onStartOver={handleStartOver}
+            courseIds={courseIds}
           />
         )}
       </main>

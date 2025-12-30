@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -6,10 +6,10 @@ import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command";
-import { 
-  Upload, 
-  X, 
-  Plus, 
+import {
+  Upload,
+  X,
+  Plus,
   File,
   ChevronRight,
   Check,
@@ -17,7 +17,7 @@ import {
   FileText
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
+import { useAuth } from "@/contexts/AuthContext";
 interface ContentInputStepProps {
   assessmentType: string;
   courseIds: string[];
@@ -32,18 +32,11 @@ interface ContentInputStepProps {
   onMaterialFilesChange: (files: File[]) => void;
   onNext: () => void;
 }
+interface CourseOption {
+  value: string; // identifier
+  label: string; // name
+}
 
-const availableCourseIds = [
-  { value: "NA", label: "N/A - No Course ID" },
-  { value: "CS101", label: "CS101 - Introduction to Computer Science" },
-  { value: "CS201", label: "CS201 - Data Structures" },
-  { value: "CS301", label: "CS301 - Algorithms" },
-  { value: "CS401", label: "CS401 - Machine Learning" },
-  { value: "MATH101", label: "MATH101 - Calculus I" },
-  { value: "MATH201", label: "MATH201 - Linear Algebra" },
-  { value: "PHY101", label: "PHY101 - Physics I" },
-  { value: "ENG101", label: "ENG101 - English Composition" },
-];
 
 const ContentInputStep = ({
   assessmentType,
@@ -61,7 +54,13 @@ const ContentInputStep = ({
 }: ContentInputStepProps) => {
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
+  const PAGE_LIMIT = 100;
 
+  const [availableCourseIds, setAvailableCourseIds] = useState<CourseOption[]>([]);
+  const [isCoursesLoading, setIsCoursesLoading] = useState(false);
+  const [courseOffset, setCourseOffset] = useState(0);
+  const [hasMoreCourses, setHasMoreCourses] = useState(true);
+  const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";
 
   const handleCourseSelect = (value: string) => {
@@ -87,7 +86,6 @@ const ContentInputStep = ({
   const removeCourseId = (id: string) => {
     onCourseIdsChange(courseIds.filter((c) => c !== id));
   };
-
   const addTopic = () => {
     if (newTopic.trim() && !topics.includes(newTopic.trim())) {
       onTopicsChange([...topics, newTopic.trim()]);
@@ -101,10 +99,10 @@ const ContentInputStep = ({
 
   const handleTranscriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(f => 
+    const validFiles = files.filter(f =>
       f.name.endsWith('.vtt') || f.name.endsWith('.txt')
     );
-    
+
     if (validFiles.length !== files.length) {
       toast({
         title: "Invalid File Type",
@@ -148,14 +146,143 @@ const ContentInputStep = ({
 
   const canProceed = topics.length > 0;
 
-  const selectedCourseLabels = useMemo(() => {
-    if (courseIds.length === 0) return "Select course...";
-    if (courseIds.length === 1) {
-      const course = availableCourseIds.find(c => c.value === courseIds[0]);
-      return course?.label || courseIds[0];
+const selectedCourseLabels = useMemo(() => {
+  if (courseIds.length === 0) return "Select course...";
+  if (courseIds.length === 1) {
+    const course = availableCourseIds.find(c => c.value === courseIds[0]);
+    return course?.label || courseIds[0];
+  }
+  return `${courseIds.length} courses selected`;
+}, [courseIds, availableCourseIds]); // ✅ FIX
+
+  // useEffect(() => {
+  //   if (!user?.access_token) return;
+
+  const fetchCourses = async (reset = false) => {
+    if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
+
+    try {
+      setIsCoursesLoading(true);
+
+      const response = await fetch(
+        "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.access_token}`,
+          },
+          body: JSON.stringify({
+            request: {
+              filters: {
+                primaryCategory: ["Course"],
+                status: ["Live"],
+                courseCategory: ["Course"],
+              },
+              fields: ["name"],
+              sort_by: { createdOn: "desc" },
+              limit: PAGE_LIMIT,
+              offset: reset ? 0 : courseOffset,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch courses");
+
+      const data = await response.json();
+      console.log('data',data)
+      const newCourses: CourseOption[] =
+        data?.result?.content?.map((item: any) => ({
+          value: item.identifier,
+          label: item.name,
+        })) ?? [];
+       console.log('newCourses',newCourses)
+      setAvailableCourseIds((prev) => {
+        const base = reset
+          ? [{ value: "NA", label: "N/A - No Course ID" }]
+          : prev;
+
+        return [...base, ...newCourses];
+      });
+
+      setCourseOffset((prev) => (reset ? PAGE_LIMIT : prev + PAGE_LIMIT));
+      setHasMoreCourses(newCourses.length === PAGE_LIMIT);
+    } catch (error) {
+      console.error("Course fetch error:", error);
+      toast({
+        title: "Error",
+        description: "Unable to load more courses",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCoursesLoading(false);
     }
-    return `${courseIds.length} courses selected`;
-  }, [courseIds]);
+  };
+
+const fetchCoursesByIds = async (ids: string[]) => {
+  if (!user?.access_token || ids.length === 0) return;
+
+  try {
+    const response = await fetch(
+      "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.access_token}`,
+        },
+        body: JSON.stringify({
+          request: {
+            filters: {
+              identifier: ids,
+            },
+            fields: ["name"],
+            limit: ids.length,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    const courses: CourseOption[] =
+      data?.result?.content?.map((item: any) => ({
+        value: item.identifier,
+        label: item.name,
+      })) ?? [];
+
+    setAvailableCourseIds((prev) => {
+      const map = new Map(prev.map(c => [c.value, c.label]));
+      courses.forEach(c => map.set(c.value, c.label));
+
+      // keep NA on top
+      const merged = Array.from(map, ([value, label]) => ({ value, label }));
+      return merged.some(c => c.value === "NA")
+        ? merged
+        : [{ value: "NA", label: "N/A - No Course ID" }, ...merged];
+    });
+  } catch (e) {
+    console.error("Failed to hydrate selected courses", e);
+  }
+};
+useEffect(() => {
+  if (courseIds.length > 0 && courseIds[0] !== "NA") {
+    fetchCoursesByIds(courseIds);
+  }
+}, [courseIds, user?.access_token]);
+  // fetchCourses();
+  // }, [user?.access_token]);
+
+  useEffect(() => {
+    if (courseSearchOpen) {
+      setCourseOffset(0);
+      setHasMoreCourses(true);
+      fetchCourses(true);
+    }
+  }, [courseSearchOpen]);
 
   return (
     <div className="space-y-4 stagger-children">
@@ -175,17 +302,39 @@ const ContentInputStep = ({
               role="combobox"
               aria-expanded={courseSearchOpen}
               className="w-full justify-between h-10 text-left font-normal"
+              disabled={isCoursesLoading}
             >
-              <span className="truncate">{selectedCourseLabels}</span>
+              <span className="truncate">
+                {isCoursesLoading ? "Loading courses..." : selectedCourseLabels}
+              </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
+
           </PopoverTrigger>
           <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
             <Command>
               <CommandInput placeholder="Search courses..." className="h-10" />
-              <CommandList>
+              <CommandList onScroll={(e) => {
+                const target = e.currentTarget;
+                if (
+                  target.scrollTop + target.clientHeight >= target.scrollHeight - 20
+                ) {
+                  fetchCourses();
+                }
+              }}>
                 <CommandEmpty>No course found.</CommandEmpty>
                 <CommandGroup>
+                  {isCoursesLoading && (
+                    <div className="py-2 text-center text-xs text-muted-foreground">
+                      Loading more courses...
+                    </div>
+                  )}
+
+                  {!hasMoreCourses && (
+                    <div className="py-2 text-center text-xs text-muted-foreground">
+                      No more courses
+                    </div>
+                  )}
                   {availableCourseIds.map((course) => (
                     <CommandItem
                       key={course.value}
@@ -195,8 +344,8 @@ const ContentInputStep = ({
                     >
                       <div className={cn(
                         "w-4 h-4 rounded border mr-2 flex items-center justify-center",
-                        courseIds.includes(course.value) 
-                          ? "bg-primary border-primary" 
+                        courseIds.includes(course.value)
+                          ? "bg-primary border-primary"
                           : "border-muted-foreground/30"
                       )}>
                         {courseIds.includes(course.value) && (
@@ -214,18 +363,26 @@ const ContentInputStep = ({
 
         {courseIds.length > 0 && courseIds[0] !== "NA" && (
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {courseIds.map((id) => (
-              <Badge
-                key={id}
-                variant="secondary"
-                className="text-xs px-2 py-1 flex items-center gap-1"
-              >
-                {id}
-                <button onClick={() => removeCourseId(id)} className="hover:text-destructive ml-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))}
+         {courseIds.map((id) => {
+  const course = availableCourseIds.find(c => c.value === id);
+
+  return (
+    <Badge
+      key={id}
+      variant="secondary"
+      className="text-xs px-2 py-1 flex items-center gap-1"
+    >
+      {course?.label ?? id}
+      <button
+        onClick={() => removeCourseId(id)}
+        className="hover:text-destructive ml-0.5"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </Badge>
+  );
+})}
+
           </div>
         )}
       </div>
