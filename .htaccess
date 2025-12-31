@@ -6,3 +6,5 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /ai-assment-generation-ui/index.html [L]
 </IfModule>
+ 
+ 
