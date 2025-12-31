@@ -34,7 +34,7 @@ const App = () => (
       <AuthProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter basename="/ai-assment-generation-ui">
+        <BrowserRouter >
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
