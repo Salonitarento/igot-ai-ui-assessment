@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 220 20% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 20%;
+
+    --primary: 220 60% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 20% 30%;
+
+    --muted: 210 15% 95%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 160 40% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 60% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 60% 50%;
+
+    --radius: 0.625rem;
+
+    /* Bloom's Taxonomy Colors - Softer versions */
+    --bloom-remember: 200 50% 55%;
+    --bloom-understand: 170 45% 45%;
+    --bloom-apply: 145 40% 50%;
+    --bloom-analyze: 40 55% 55%;
+    --bloom-evaluate: 25 55% 55%;
+    --bloom-create: 330 45% 55%;
+
+    /* Soft accent colors */
+    --soft-blue: 220 60% 50%;
+    --soft-green: 160 40% 45%;
+    --soft-amber: 35 50% 50%;
+    --soft-rose: 350 45% 55%;
+
+    /* Gradients - Subtle */
+    --gradient-primary: linear-gradient(135deg, hsl(220 60% 50%), hsl(240 50% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(160 40% 45%), hsl(180 45% 50%));
+    --gradient-warm: linear-gradient(135deg, hsl(35 50% 50%), hsl(25 55% 55%));
+
+    /* Shadows - Softer */
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 20% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(220 20% 20% / 0.06);
+    --shadow-lg: 0 8px 24px -4px hsl(220 20% 20% / 0.08);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 20%;
+    --sidebar-primary: 220 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 220 20% 30%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 220 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(220 60% 50% / 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(160 40% 45% / 0.06), transparent),
+      radial-gradient(ellipse 50% 30% at 0% 80%, hsl(220 60% 50% / 0.04), transparent),
+      hsl(var(--background));
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-accent {
+    background-image: var(--gradient-accent);
+  }
+
+  .bg-gradient-warm {
+    background-image: var(--gradient-warm);
+  }
+
+  .card-elevated {
+    @apply bg-card border border-border rounded-xl;
+    box-shadow: var(--shadow-md);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Animations */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s ease-out forwards;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  animation: slide-up 0.35s ease-out forwards;
+  opacity: 0;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.18s; }
