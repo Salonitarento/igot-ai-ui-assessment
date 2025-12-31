@@ -33,6 +33,7 @@ interface ConfigurationStepProps {
   onBack: () => void;
   onGenerate: () => void;
   isGenerating: boolean;
+  courseIds: any
 }
 
 const assessmentLevels = [
@@ -62,6 +63,7 @@ const ConfigurationStep = ({
   onBack,
   onGenerate,
   isGenerating,
+  courseIds
 }: ConfigurationStepProps) => {
   const toggleQuestionType = (id: string) => {
     onQuestionTypesChange(

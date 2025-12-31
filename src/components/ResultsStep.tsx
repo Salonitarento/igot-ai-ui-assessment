@@ -49,6 +49,7 @@ interface ResultsStepProps {
   topics: string[];
   onStartOver: () => void;
   courseIds?:  string[];
+  specificCourseId?: string;
 }
 
 // Sample generated questions data
@@ -150,7 +151,8 @@ const ResultsStep = ({
   timeLimit,
   topics,
   onStartOver,
-  courseIds
+  courseIds,
+  specificCourseId
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([1]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -217,14 +219,14 @@ const handleExport = async () => {
     let mimeType = "";
 
     if (selectedFormat === "json") {
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_json/${courseIds}`;
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_json/${specificCourseId || courseIds}`;
       fileName = "assessment.json";
       mimeType = "application/json";
     }
 
     if (selectedFormat === "pdf") {
       // example – update when PDF API is ready
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${courseIds}`;
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
       fileName = "assessment.pdf";
       mimeType = "application/pdf";
     }

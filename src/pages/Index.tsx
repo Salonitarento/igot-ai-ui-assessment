@@ -7,6 +7,7 @@ import ConfigurationStep, { QuestionTypeConfig } from "@/components/Configuratio
 import ResultsStep from "@/components/ResultsStep";
 import { toast } from "@/hooks/use-toast";
 import { ListChecks, ToggleLeft, MessageSquare, FileText } from "lucide-react";
+import { GenerateLoaderDialog } from "@/components/common/GenerateLoaderDialog";
 
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
@@ -28,6 +29,7 @@ const Index = () => {
   
   const [questionTypes, setQuestionTypes] = useState(defaultQuestionTypes);
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
+  const [specificCourseId, setSpecificCourseId] = useState();
   const [bloomValues, setBloomValues] = useState<Record<string, number>>({
     remember: 10,
     understand: 20,
@@ -177,6 +179,7 @@ const handleGenerate = async () => {
 
     const result = await response.json();
     console.log("Generate response:", result);
+    setSpecificCourseId(result.job_id)
  
 
   pollGenerationStatus(
@@ -242,7 +245,7 @@ const handleGenerate = async () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
+<GenerateLoaderDialog open={isGenerating} />
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Title */}
         <div className="mb-5">
@@ -299,7 +302,7 @@ const handleGenerate = async () => {
             onBack={() => setCurrentStep("content")}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
-
+            courseIds={courseIds}
           />
         )}
 
@@ -312,6 +315,7 @@ const handleGenerate = async () => {
             topics={topics}
             onStartOver={handleStartOver}
             courseIds={courseIds}
+            specificCourseId={specificCourseId}
           />
         )}
       </main>
