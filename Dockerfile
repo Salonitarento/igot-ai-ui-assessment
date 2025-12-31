@@ -15,7 +15,7 @@ RUN npm run build
 FROM httpd:alpine
 
 # Copy React build folder
-COPY --from=build /app/build /usr/local/apache2/htdocs
+COPY --from=build /app/dist /usr/local/apache2/htdocs
 
 # Optional: React Router support (SPA)
 # You can use a .htaccess file if needed
