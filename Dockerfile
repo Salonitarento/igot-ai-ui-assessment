@@ -22,7 +22,7 @@ COPY --from=build /app/build /usr/local/apache2/htdocs
 COPY ./.htaccess /usr/local/apache2/htdocs
 
 # Custom 404 page (optional)
-COPY src/404.html /usr/local/apache2/htdocs/404.html
+#COPY src/404.html /usr/local/apache2/htdocs/404.html
 
 # Enable mod_rewrite for SPA routing
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /usr/local/apache2/conf/httpd.conf \
