@@ -19,7 +19,7 @@ COPY --from=build /app/dist /usr/local/apache2/htdocs
 
 # Optional: React Router support (SPA)
 # You can use a .htaccess file if needed
-COPY ./.htaccess /usr/local/apache2/htdocs
+COPY ./.htaccess /usr/local/apache2/htdocs/.htaccess
 
 # Custom 404 page (optional)
 #COPY src/404.html /usr/local/apache2/htdocs/404.html
