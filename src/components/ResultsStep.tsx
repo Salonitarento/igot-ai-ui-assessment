@@ -50,6 +50,8 @@ interface ResultsStepProps {
   onStartOver: () => void;
   courseIds?:  string[];
   specificCourseId?: string;
+  questions: Question[];
+  setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
 }
 
 // Sample generated questions data
@@ -152,11 +154,12 @@ const ResultsStep = ({
   topics,
   onStartOver,
   courseIds,
-  specificCourseId
+  specificCourseId,
+    questions ,
+    setQuestions
 }: ResultsStepProps) => {
-  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([1]);
+  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
-  const [questions, setQuestions] = useState<Question[]>(sampleQuestions);
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Question | null>(null);
 
@@ -337,7 +340,7 @@ const handleExport = async () => {
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setExpandedQuestions(sampleQuestions.map(q => q.id))}
+                onClick={() => setExpandedQuestions(questions.map(q => q.id))}
                 className="text-xs text-primary hover:underline"
               >
                 Expand All
@@ -354,8 +357,8 @@ const handleExport = async () => {
         </div>
         
         <div className="divide-y divide-border">
-          {questions.map((q) => {
-            const colors = bloomColors[q.bloomLevel];
+          {questions?.map((q) => {
+            const colors = bloomColors[q.bloomLevel] ?? bloomColors["Remember"];
             const isExpanded = expandedQuestions.includes(q.id);
             const isEditing = editingQuestionId === q.id;
             const currentData = isEditing && editForm ? editForm : q;
@@ -373,7 +376,7 @@ const handleExport = async () => {
                     onClick={() => toggleQuestion(q.id)}
                     className={cn(
                       "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0",
-                      colors.bg
+                      colors?.bg
                     )}
                   >
                     {q.id}
@@ -430,7 +433,7 @@ const handleExport = async () => {
                       onClick={() => toggleQuestion(q.id)}
                       className={cn(
                         "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                        isExpanded ? colors.bg + " text-white" : "bg-muted"
+                        isExpanded ? colors?.bg + " text-white" : "bg-muted"
                       )}
                     >
                       {isExpanded ? (
@@ -531,7 +534,7 @@ const handleExport = async () => {
 
         <div className="p-3 bg-muted/30 border-t border-border text-center">
           <p className="text-xs text-muted-foreground">
-            Showing {questions.length} of {totalQuestions} questions • Hover over a question and click the pencil icon to edit
+            Showing {questions.length} questions • Hover over a question and click the pencil icon to edit
           </p>
         </div>
       </div>
