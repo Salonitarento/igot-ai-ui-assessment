@@ -4,6 +4,7 @@ import { ClipboardCheck, GraduationCap, BookOpen, Check } from "lucide-react";
 interface AssessmentTypeSelectorProps {
   selected: string;
   onSelect: (type: string) => void;
+  currentStep?: string
 }
 
 const assessmentTypes = [
@@ -27,7 +28,7 @@ const assessmentTypes = [
   },
 ];
 
-const AssessmentTypeSelector = ({ selected, onSelect }: AssessmentTypeSelectorProps) => {
+const AssessmentTypeSelector = ({ selected, onSelect, currentStep }: AssessmentTypeSelectorProps) => {
   return (
     <div className="flex gap-3">
       {assessmentTypes.map((type) => {
@@ -38,6 +39,7 @@ const AssessmentTypeSelector = ({ selected, onSelect }: AssessmentTypeSelectorPr
           <button
             key={type.id}
             onClick={() => onSelect(type.id)}
+            disabled={currentStep == 'configuration' || currentStep == 'results'}
             className={cn(
               "relative flex-1 flex items-center gap-3 p-4 rounded-xl border transition-all duration-200",
               isSelected

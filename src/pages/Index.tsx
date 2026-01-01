@@ -42,7 +42,7 @@ const Index = () => {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
-
+  const [questions, setQuestions] = useState<any[]>([]);
   const handleBloomChange = (id: string, value: number) => {
     setBloomValues((prev) => ({ ...prev, [id]: value }));
   };
@@ -181,11 +181,56 @@ const handleGenerate = async () => {
     console.log("Generate response:", result);
     setSpecificCourseId(result.job_id)
  
+const normalizeQuestions = (rawQuestions: any[]) => {
+  return rawQuestions.map((q: any, index: number) => {
+    const isMCQ = q.type === "mcq";
 
-  pollGenerationStatus(
+    return {
+      id: index + 1,
+
+      type: isMCQ ? "MCQ" : "FTB",
+
+      bloomLevel:
+        q.blooms_level
+          ? q.blooms_level.charAt(0).toUpperCase() +
+            q.blooms_level.slice(1)
+          : "Remember",
+
+      bloomPercent: 0, // backend does not send per-question %
+
+      question: q.question_text,
+
+      options: isMCQ
+        ? q.options.map((opt: string, i: number) => ({
+            label: String.fromCharCode(65 + i),
+            text: opt,
+          }))
+        : [],
+
+      correctAnswer: isMCQ
+        ? String.fromCharCode(65 + q.correct_option_index)
+        : q.correct_answer,
+
+      rationale: q.explanation || "—",
+    };
+  });
+};
+
+pollGenerationStatus(
   result.job_id,
   (completedData) => {
     console.log("Generation completed:", completedData);
+
+    const assessmentData = JSON.parse(completedData.assessment_data);
+
+    const questionsByType = assessmentData.questions;
+
+    const rawQuestions = Object.values(questionsByType).flat();
+
+    const normalizedQuestions = normalizeQuestions(rawQuestions);
+    console.log('normalizedQuestions', normalizedQuestions)
+    setQuestions(normalizedQuestions);
+
     setCurrentStep("results");
 
     setIsGenerating(false);
@@ -198,14 +243,15 @@ const handleGenerate = async () => {
 
     toast({
       title: "Assessment Generated!",
-      description: `${totalQuestions} questions created.`,
+      description: `${normalizedQuestions.length} questions created.`,
     });
   },
-      (error) => {
-        console.error("Generation failed:", error);
-        setIsGenerating(false);
-      }
-    );
+  (error) => {
+    console.error("Generation failed:", error);
+    setIsGenerating(false);
+  }
+);
+
 
     
 
@@ -261,6 +307,7 @@ const handleGenerate = async () => {
               setAssessmentType(type);
               setCourseIds([]);
             }}
+            currentStep={currentStep}
           />
         </div>
 
@@ -316,6 +363,8 @@ const handleGenerate = async () => {
             onStartOver={handleStartOver}
             courseIds={courseIds}
             specificCourseId={specificCourseId}
+            questions={questions} 
+            setQuestions={setQuestions}
           />
         )}
       </main>
