@@ -191,13 +191,11 @@ const selectedCourseLabels = useMemo(() => {
       if (!response.ok) throw new Error("Failed to fetch courses");
 
       const data = await response.json();
-      console.log('data',data)
       const newCourses: CourseOption[] =
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
           label: item.name,
         })) ?? [];
-       console.log('newCourses',newCourses)
       setAvailableCourseIds((prev) =>
   reset ? newCourses : [...prev, ...newCourses]
 );
