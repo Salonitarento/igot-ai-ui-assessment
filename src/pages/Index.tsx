@@ -138,12 +138,21 @@ const handleGenerate = async () => {
   const enabledQuestionTypes = questionTypes
     .filter(q => q.enabled && q.count > 0)
     .map(q => q.id);
-  console.log('enabledQuestionTypes',enabledQuestionTypes)
+  console.log('enabledQuestionTypes',questionTypes)
   const totalQuestions = questionTypes
     .filter(q => q.enabled)
     .reduce((sum, q) => sum + q.count, 0);
-
+const questionTypeCounts = questionTypes
+  .filter(q => q.enabled && q.count > 0)
+  .reduce((acc: Record<string, number>, q) => {
+    acc[q.id] = q.count;
+    return acc;
+  }, {});
   const formData = new FormData();
+formData.append(
+  "question_type_counts",
+  JSON.stringify(questionTypeCounts)
+);
 
   formData.append("course_ids", courseIds);
   formData.append("force", "false");
