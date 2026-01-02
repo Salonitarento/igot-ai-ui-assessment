@@ -183,35 +183,38 @@ const handleGenerate = async () => {
  
 const normalizeQuestions = (rawQuestions: any[]) => {
   return rawQuestions.map((q: any, index: number) => {
-    const isMCQ = q.type === "mcq";
+    const type = q.question_type?.toUpperCase(); // MCQ / FTB
+    const isMCQ = type === "MCQ";
 
     return {
       id: index + 1,
 
-      type: isMCQ ? "MCQ" : "FTB",
+      type: type, // "MCQ", "FTB"
 
-      bloomLevel:
-        q.blooms_level
-          ? q.blooms_level.charAt(0).toUpperCase() +
-            q.blooms_level.slice(1)
-          : "Remember",
+      bloomLevel: q.blooms_level
+        ? q.blooms_level.charAt(0).toUpperCase() + q.blooms_level.slice(1)
+        : "Remember",
 
-      bloomPercent: 0, // backend does not send per-question %
+      bloomPercent: q.relevance_percentage ?? 0,
 
       question: q.question_text,
 
-      options: isMCQ
-        ? q.options.map((opt: string, i: number) => ({
+      options: isMCQ && Array.isArray(q.options)
+        ? q.options.map((opt: any, i: number) => ({
             label: String.fromCharCode(65 + i),
-            text: opt,
+            text: opt.text,
           }))
         : [],
 
       correctAnswer: isMCQ
         ? String.fromCharCode(65 + q.correct_option_index)
-        : q.correct_answer,
+        : q.correct_answer ?? "",
 
-      rationale: q.explanation || "—",
+      question_type_rationale:
+        q.reasoning?.question_type_rationale ?? "—",
+
+      rationale:
+        q.reasoning?.question_type_rationale ?? "—",
     };
   });
 };

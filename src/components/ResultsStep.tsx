@@ -503,9 +503,36 @@ const handleExport = async () => {
                           );
                         })}
                       </div>
+                       {/* correct answer */}
+                       {currentData?.type == 'FTB' &&
+                      <div className="bg-blue-50/80 rounded-lg p-4 border border-blue-200">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                            <CheckCircle className="w-4 h-4 text-blue-600" />
+                          </div>
 
+                          <div className="flex-1">
+                            <div className="text-xs font-medium text-blue-700 mb-1">
+                              Correct Answer
+                            </div>
+
+                            {isEditing ? (
+                              <Textarea
+                                value={editForm?.correctAnswer || ""}
+                                onChange={(e) => updateEditForm("correctAnswer", e.target.value)}
+                                className="text-sm bg-white border-blue-300 focus:border-blue-500 min-h-[80px]"
+                              />
+                            ) : (
+                              <p className="text-sm text-blue-900">
+                                {currentData.correctAnswer}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                          }
                       {/* Rationale */}
-                      <div className="bg-white/80 rounded-lg p-4 border border-border">
+                      {/* <div className="bg-white/80 rounded-lg p-4 border border-border">
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
                             <Lightbulb className="w-4 h-4 text-amber-600" />
@@ -519,11 +546,11 @@ const handleExport = async () => {
                                 className="text-sm bg-white border-primary/30 focus:border-primary min-h-[80px]"
                               />
                             ) : (
-                              <p className="text-sm text-foreground">{q.rationale}</p>
+                              <p className="text-sm text-foreground">{currentData.rationale}</p>
                             )}
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 )}
