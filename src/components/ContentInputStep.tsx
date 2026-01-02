@@ -64,11 +64,11 @@ const ContentInputStep = ({
   const isComprehensive = assessmentType === "comprehensive";
 
   const handleCourseSelect = (value: string) => {
-    if (value === "NA") {
-      onCourseIdsChange(["NA"]);
-      setCourseSearchOpen(false);
-      return;
-    }
+    // if (value === "NA") {
+    //   onCourseIdsChange(["NA"]);
+    //   setCourseSearchOpen(false);
+    //   return;
+    // }
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
@@ -144,7 +144,7 @@ const ContentInputStep = ({
     onMaterialFilesChange(materialFiles.filter((_, i) => i !== index));
   };
 
-  const canProceed = topics.length > 0;
+  const canProceed = topics.length > 0 && courseIds.length > 0;
 
 const selectedCourseLabels = useMemo(() => {
   if (courseIds.length === 0) return "Select course...";
@@ -198,13 +198,9 @@ const selectedCourseLabels = useMemo(() => {
           label: item.name,
         })) ?? [];
        console.log('newCourses',newCourses)
-      setAvailableCourseIds((prev) => {
-        const base = reset
-          ? [{ value: "NA", label: "N/A - No Course ID" }]
-          : prev;
-
-        return [...base, ...newCourses];
-      });
+      setAvailableCourseIds((prev) =>
+  reset ? newCourses : [...prev, ...newCourses]
+);
 
       setCourseOffset((prev) => (reset ? PAGE_LIMIT : prev + PAGE_LIMIT));
       setHasMoreCourses(newCourses.length === PAGE_LIMIT);
@@ -260,9 +256,7 @@ const fetchCoursesByIds = async (ids: string[]) => {
 
       // keep NA on top
       const merged = Array.from(map, ([value, label]) => ({ value, label }));
-      return merged.some(c => c.value === "NA")
-        ? merged
-        : [{ value: "NA", label: "N/A - No Course ID" }, ...merged];
+      return merged;
     });
   } catch (e) {
     console.error("Failed to hydrate selected courses", e);
@@ -289,7 +283,7 @@ useEffect(() => {
       {/* Course DO ID */}
       <div className="card-elevated p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-foreground">Course DO ID</h3>
+          <h3 className="text-sm font-medium text-foreground">Course DO ID <span className="text-destructive">*</span></h3>
           {isComprehensive && (
             <Badge variant="secondary" className="text-xs">Multi-select</Badge>
           )}
