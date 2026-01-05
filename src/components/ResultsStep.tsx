@@ -19,7 +19,8 @@ import {
   HelpCircle,
   Pencil,
   Save,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,8 @@ interface ResultsStepProps {
   specificCourseId?: string;
   questions: Question[];
   setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
+onRegenerate: () => void;
+isGenerating: any
 }
 
 // Sample generated questions data
@@ -156,7 +159,9 @@ const ResultsStep = ({
   courseIds,
   specificCourseId,
     questions ,
-    setQuestions
+    setQuestions,
+    isGenerating,
+  onRegenerate
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -301,7 +306,16 @@ const handleExport = async () => {
           </div>
         </div>
       </div>
-
+      
+  <Button
+    variant="outline"
+    onClick={onRegenerate}
+    disabled={isGenerating}
+    className="h-9 w-[100%]"
+  >
+    <Sparkles className="w-4 h-4 mr-1.5 " />
+    Regenerate with Same Settings
+  </Button>
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-3">
         {[

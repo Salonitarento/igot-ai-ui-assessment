@@ -26,6 +26,7 @@ const Index = () => {
   const [notes, setNotes] = useState("");
   const [transcriptFiles, setTranscriptFiles] = useState<File[]>([]);
   const [materialFiles, setMaterialFiles] = useState<File[]>([]);
+  const [language, setLanguage] = useState("");
   
   const [questionTypes, setQuestionTypes] = useState(defaultQuestionTypes);
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
@@ -46,7 +47,6 @@ const Index = () => {
   const handleBloomChange = (id: string, value: number) => {
     setBloomValues((prev) => ({ ...prev, [id]: value }));
   };
-
   const handleContentNext = () => {
     if (topics.length === 0) {
       toast({
@@ -132,9 +132,8 @@ const pollGenerationStatus = async (
   poll();
 };
 
-const handleGenerate = async () => {
+const handleGenerate = async (source: "generate" | "regenerate" = "generate") => {
   setIsGenerating(true);
-
   const enabledQuestionTypes = questionTypes
     .filter(q => q.enabled && q.count > 0)
     .map(q => q.id);
@@ -155,7 +154,8 @@ formData.append(
 );
 
   formData.append("course_ids", courseIds);
-  formData.append("force", "false");
+  const force : any  = (source == 'generate') ? false : true
+  formData.append("force", force);
 
   // 🔹 From this component
   formData.append("assessment_type", assessmentType);
@@ -172,7 +172,7 @@ formData.append(
 
   // 🔹 Dummy placeholders
   formData.append("topic_names", JSON.stringify(topics));
-  // formData.append("language", "english");
+  formData.append("language", (language).toLowerCase());
   // formData.append("additional_instructions", "Auto-generated");
 
   try {
@@ -345,6 +345,8 @@ pollGenerationStatus(
             onTranscriptFilesChange={setTranscriptFiles}
             onMaterialFilesChange={setMaterialFiles}
             onNext={handleContentNext}
+            language={language}
+            setLanguage={setLanguage}
           />
         )}
 
@@ -359,7 +361,7 @@ pollGenerationStatus(
             onBloomChange={handleBloomChange}
             onTimeLimitChange={setTimeLimit}
             onBack={() => setCurrentStep("content")}
-            onGenerate={handleGenerate}
+            onGenerate={() => handleGenerate("generate")}
             isGenerating={isGenerating}
             courseIds={courseIds}
           />
@@ -377,6 +379,8 @@ pollGenerationStatus(
             specificCourseId={specificCourseId}
             questions={questions} 
             setQuestions={setQuestions}
+            isGenerating={isGenerating}
+            onRegenerate={() => handleGenerate("regenerate")}
           />
         )}
       </main>
