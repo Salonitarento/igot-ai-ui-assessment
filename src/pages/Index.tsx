@@ -60,7 +60,7 @@ const Index = () => {
     setCompletedSteps((prev) => [...new Set([...prev, "content"])]);
     setCurrentStep("configuration");
   };
-
+  console.log('transcriptFiles', transcriptFiles , materialFiles)
   // const handleGenerate = async () => {
   //   const bloomTotal = Object.values(bloomValues).reduce((sum, v) => sum + v, 0);
   //   const totalQuestions = questionTypes
@@ -174,6 +174,10 @@ formData.append(
   formData.append("topic_names", JSON.stringify(topics));
   formData.append("language", (language).toLowerCase());
   // formData.append("additional_instructions", "Auto-generated");
+// 🔹 Append transcript files
+[...transcriptFiles, ...materialFiles].forEach(file => {
+  formData.append("files", file);
+});
 
   try {
     const response = await fetch(`https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/generate`, {

@@ -147,6 +147,7 @@ const exportFormats = [
   { id: "pdf", name: "PDF", icon: FileText, description: "Print-ready document" },
   { id: "word", name: "Word", icon: FileType, description: "Editable .docx file" },
   { id: "json", name: "JSON", icon: FileJson, description: "Raw data format" },
+  { id: "csv", name: "CSV", icon: FileJson, description: "CSV file" },
 ];
 
 const ResultsStep = ({
@@ -237,6 +238,18 @@ const handleExport = async () => {
       url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
       fileName = "assessment.pdf";
       mimeType = "application/pdf";
+    }
+    if (selectedFormat === "csv") {
+      // example – update when PDF API is ready
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_csv/${specificCourseId || courseIds}`;
+      fileName = "assessment.csv";
+      mimeType = "application/csv";
+    }
+      if (selectedFormat === "word") {
+      // example – update when PDF API is ready
+      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_docx/${specificCourseId || courseIds}`;
+      fileName = "assessment.docx";
+      mimeType = "application/docx";
     }
 
     if (!url) return;
@@ -593,7 +606,7 @@ const handleExport = async () => {
       {/* Export Options */}
       <div className="card-elevated p-4">
         <h4 className="text-sm font-medium text-foreground mb-3">Export Format</h4>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-4">
           {exportFormats.map((format) => {
             const Icon = format.icon;
             const isSelected = selectedFormat === format.id;
