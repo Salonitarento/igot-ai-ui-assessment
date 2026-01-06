@@ -25,6 +25,8 @@ interface ContentInputStepProps {
   notes: string;
   transcriptFiles: File[];
   materialFiles: File[];
+  language: string;
+  setLanguage: (language: string) => void;
   onCourseIdsChange: (ids: string[]) => void;
   onTopicsChange: (topics: string[]) => void;
   onNotesChange: (notes: string) => void;
@@ -45,6 +47,8 @@ const ContentInputStep = ({
   notes,
   transcriptFiles,
   materialFiles,
+  language,
+  setLanguage,
   onCourseIdsChange,
   onTopicsChange,
   onNotesChange,
@@ -60,9 +64,21 @@ const ContentInputStep = ({
   const [isCoursesLoading, setIsCoursesLoading] = useState(false);
   const [courseOffset, setCourseOffset] = useState(0);
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";
-
+  const LANGUAGES = [
+    { value: "Marathi", label: "Marathi" },
+    { value: "Bengali", label: "Bengali" },
+    { value: "Hindi", label: "Hindi" },
+    { value: "Malayalam", label: "Malayalam" },
+    { value: "Kannada", label: "Kannada" },
+    { value: "Tamil", label: "Tamil" },
+    { value: "English", label: "English" },
+    { value: "Telugu", label: "Telugu" },
+    { value: "Punjabi", label: "Punjabi" },
+    { value: "Gujarati", label: "Gujarati" },
+  ];
   const handleCourseSelect = (value: string) => {
     // if (value === "NA") {
     //   onCourseIdsChange(["NA"]);
@@ -415,7 +431,55 @@ useEffect(() => {
           </div>
         )}
       </div>
+      <div className="card-elevated p-4">
+        <h3 className="text-sm font-medium text-foreground mb-3">
+          Language <span className="text-destructive">*</span>
+        </h3>
 
+        <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              className="w-full justify-between h-10 font-normal"
+            >
+              {language
+                ? LANGUAGES.find(l => l.value === language)?.label
+                : "Select language..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search language..." />
+              <CommandList>
+                <CommandEmpty>No language found.</CommandEmpty>
+                <CommandGroup>
+                  {LANGUAGES.map(lang => (
+                    <CommandItem
+                      key={lang.value}
+                      value={lang.label}
+                      onSelect={() => {
+                        setLanguage(lang.value);
+                        setLanguageOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          language === lang.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {lang.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
       {/* Additional Notes */}
       <div className="card-elevated p-4">
         <h3 className="text-sm font-medium text-foreground mb-3">

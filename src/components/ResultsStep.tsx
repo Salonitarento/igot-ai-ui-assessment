@@ -19,7 +19,8 @@ import {
   HelpCircle,
   Pencil,
   Save,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,10 @@ interface ResultsStepProps {
   specificCourseId?: string;
   questions: Question[];
   setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
+onRegenerate: () => void;
+isGenerating: any
 }
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Sample generated questions data
 const sampleQuestions = [
@@ -144,6 +148,7 @@ const exportFormats = [
   { id: "pdf", name: "PDF", icon: FileText, description: "Print-ready document" },
   { id: "word", name: "Word", icon: FileType, description: "Editable .docx file" },
   { id: "json", name: "JSON", icon: FileJson, description: "Raw data format" },
+  { id: "csv", name: "CSV", icon: FileJson, description: "CSV file" },
 ];
 
 const ResultsStep = ({
@@ -156,7 +161,9 @@ const ResultsStep = ({
   courseIds,
   specificCourseId,
     questions ,
-    setQuestions
+    setQuestions,
+    isGenerating,
+  onRegenerate
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -222,16 +229,28 @@ const handleExport = async () => {
     let mimeType = "";
 
     if (selectedFormat === "json") {
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_json/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_json/${specificCourseId || courseIds}`;
       fileName = "assessment.json";
       mimeType = "application/json";
     }
 
     if (selectedFormat === "pdf") {
       // example – update when PDF API is ready
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
       fileName = "assessment.pdf";
       mimeType = "application/pdf";
+    }
+    if (selectedFormat === "csv") {
+      // example – update when PDF API is ready
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_csv/${specificCourseId || courseIds}`;
+      fileName = "assessment.csv";
+      mimeType = "application/csv";
+    }
+      if (selectedFormat === "word") {
+      // example – update when PDF API is ready
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_docx/${specificCourseId || courseIds}`;
+      fileName = "assessment.docx";
+      mimeType = "application/docx";
     }
 
     if (!url) return;
@@ -301,7 +320,16 @@ const handleExport = async () => {
           </div>
         </div>
       </div>
-
+      
+  <Button
+    variant="outline"
+    onClick={onRegenerate}
+    disabled={isGenerating}
+    className="h-9 w-[100%]"
+  >
+    <Sparkles className="w-4 h-4 mr-1.5 " />
+    Regenerate with Same Settings
+  </Button>
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-3">
         {[
@@ -579,7 +607,7 @@ const handleExport = async () => {
       {/* Export Options */}
       <div className="card-elevated p-4">
         <h4 className="text-sm font-medium text-foreground mb-3">Export Format</h4>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-4">
           {exportFormats.map((format) => {
             const Icon = format.icon;
             const isSelected = selectedFormat === format.id;

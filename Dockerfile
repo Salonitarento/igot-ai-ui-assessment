@@ -10,6 +10,8 @@ RUN npm install --force
 # Copy source and build
 COPY . .
 RUN npm run build
+# RUN npm run build:prod
+# this is for production environment
 
 # ---------- Stage 2: Serve with Apache ----------
 FROM httpd:alpine
