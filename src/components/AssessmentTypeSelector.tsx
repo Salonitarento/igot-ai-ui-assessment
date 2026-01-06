@@ -12,13 +12,13 @@ const assessmentTypes = [
     id: "practice",
     name: "Practice",
     icon: ClipboardCheck,
-    description: "Self-paced learning",
+    description: "Basic Assessment",
   },
   {
     id: "final",
-    name: "Final Exam",
+    name: "Final Assessment",
     icon: GraduationCap,
-    description: "Summative assessment",
+    description: "End of the course assessment",
   },
   {
     id: "comprehensive",

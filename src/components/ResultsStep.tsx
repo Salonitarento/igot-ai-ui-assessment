@@ -56,6 +56,7 @@ interface ResultsStepProps {
 onRegenerate: () => void;
 isGenerating: any
 }
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Sample generated questions data
 const sampleQuestions = [
@@ -228,26 +229,26 @@ const handleExport = async () => {
     let mimeType = "";
 
     if (selectedFormat === "json") {
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_json/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_json/${specificCourseId || courseIds}`;
       fileName = "assessment.json";
       mimeType = "application/json";
     }
 
     if (selectedFormat === "pdf") {
       // example – update when PDF API is ready
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_pdf/${specificCourseId || courseIds}`;
       fileName = "assessment.pdf";
       mimeType = "application/pdf";
     }
     if (selectedFormat === "csv") {
       // example – update when PDF API is ready
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_csv/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_csv/${specificCourseId || courseIds}`;
       fileName = "assessment.csv";
       mimeType = "application/csv";
     }
       if (selectedFormat === "word") {
       // example – update when PDF API is ready
-      url = `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/download_docx/${specificCourseId || courseIds}`;
+      url = `${BASE_URL}/ai-assment-generation/api/v1/download_docx/${specificCourseId || courseIds}`;
       fileName = "assessment.docx";
       mimeType = "application/docx";
     }

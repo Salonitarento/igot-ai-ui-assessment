@@ -27,7 +27,7 @@ const Index = () => {
   const [transcriptFiles, setTranscriptFiles] = useState<File[]>([]);
   const [materialFiles, setMaterialFiles] = useState<File[]>([]);
   const [language, setLanguage] = useState("");
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [questionTypes, setQuestionTypes] = useState(defaultQuestionTypes);
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
   const [specificCourseId, setSpecificCourseId] = useState();
@@ -107,7 +107,7 @@ const pollGenerationStatus = async (
   const poll = async () => {
     try {
       const response = await fetch(
-        `https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/status/${jobId}`
+        `${BASE_URL}/ai-assment-generation/api/v1/status/${jobId}`
       );
 
       const result = await response.json();
@@ -180,7 +180,7 @@ formData.append(
 });
 
   try {
-    const response = await fetch(`https://portal.dev.karmayogibharat.net/ai-assment-generation/api/v1/generate`, {
+    const response = await fetch(`${BASE_URL}/ai-assment-generation/api/v1/generate`, {
         method: "POST",
         body: formData,
     });
