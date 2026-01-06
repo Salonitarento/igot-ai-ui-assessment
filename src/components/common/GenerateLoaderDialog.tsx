@@ -30,9 +30,9 @@ export function GenerateLoaderDialog({
             Generating Assessment
           </DialogTitle>
 
-          <DialogDescription>
-            Please wait while we create your assessment.
-          </DialogDescription>
+          {/* <DialogDescription>
+            Please wait, It may take 2-3 minutes
+          </DialogDescription> */}
         </DialogHeader>
 
         <div className="mt-6 space-y-4">
@@ -45,7 +45,7 @@ export function GenerateLoaderDialog({
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            This may take a few seconds
+            Please wait, It may take 2-3 minutes
           </p>
         </div>
       </DialogContent>
