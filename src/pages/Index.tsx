@@ -13,6 +13,8 @@ const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
   { id: "ftb", name: "Fill in the blanks", icon: ToggleLeft, enabled: true, count: 5 },
   { id: "mtf", name: "Match the following", icon: MessageSquare, enabled: false, count: 0 },
+  { id: "truefalse", name: "True/False", icon: MessageSquare, enabled: false, count: 0 },
+  { id: "multichoice", name: "Multi Select Questions", icon: MessageSquare, enabled: false, count: 0 },
   // { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
 ];
 
@@ -332,6 +334,8 @@ pollGenerationStatus(
           currentStep={currentStep}
           onStepChange={setCurrentStep}
           completedSteps={completedSteps}
+          topics={topics}
+          courseIds={courseIds}
         />
 
         {/* Step Content */}

@@ -17,9 +17,12 @@ interface StepNavigationProps {
   currentStep: string;
   onStepChange: (step: string) => void;
   completedSteps: string[];
+  courseIds: any;
+  topics: any;
 }
 
-const StepNavigation = ({ currentStep, onStepChange, completedSteps }: StepNavigationProps) => {
+const StepNavigation = ({ currentStep, onStepChange, completedSteps,courseIds, topics}: StepNavigationProps) => {
+  const canProceed = topics.length > 0 && courseIds.length > 0;
   const canNavigateTo = (stepId: string) => {
     const stepIndex = steps.findIndex(s => s.id === stepId);
     const currentIndex = steps.findIndex(s => s.id === currentStep);
@@ -46,13 +49,13 @@ const StepNavigation = ({ currentStep, onStepChange, completedSteps }: StepNavig
           <div key={step.id} className="flex items-center gap-2">
             <button
               onClick={() => isClickable && onStepChange(step.id)}
-              disabled={!isClickable}
+              disabled={!isClickable || !canProceed}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive && "bg-card text-primary shadow-soft",
                 !isActive && isCompleted && "text-accent hover:bg-card/50",
                 !isActive && !isCompleted && "text-muted-foreground",
-                !isClickable && "opacity-50 cursor-not-allowed",
+                !isClickable && !canProceed && "opacity-50 cursor-not-allowed",
                 isClickable && !isActive && "cursor-pointer hover:text-foreground"
               )}
             >
