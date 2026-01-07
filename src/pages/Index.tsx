@@ -12,9 +12,9 @@ import { GenerateLoaderDialog } from "@/components/common/GenerateLoaderDialog";
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
   { id: "ftb", name: "Fill in the blanks", icon: ToggleLeft, enabled: true, count: 5 },
-  { id: "mtf", name: "Match the following", icon: MessageSquare, enabled: false, count: 0 },
-  { id: "truefalse", name: "True/False", icon: MessageSquare, enabled: false, count: 0 },
-  { id: "multichoice", name: "Multi Select Questions", icon: MessageSquare, enabled: false, count: 0 },
+  { id: "mtf", name: "Match the following", icon: MessageSquare, enabled: false, count: 1 },
+  { id: "truefalse", name: "True/False", icon: MessageSquare, enabled: false, count: 1 },
+  { id: "multichoice", name: "Multi Select Questions", icon: MessageSquare, enabled: false, count: 1 },
   // { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
 ];
 
@@ -28,7 +28,7 @@ const Index = () => {
   const [notes, setNotes] = useState("");
   const [transcriptFiles, setTranscriptFiles] = useState<File[]>([]);
   const [materialFiles, setMaterialFiles] = useState<File[]>([]);
-  const [language, setLanguage] = useState("");
+  const [language, setLanguage] = useState('English');
   const BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [questionTypes, setQuestionTypes] = useState(defaultQuestionTypes);
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
@@ -195,16 +195,68 @@ formData.append(
     const result = await response.json();
     console.log("Generate response:", result);
     setSpecificCourseId(result.job_id)
- 
+ const formatQuestionType = (type?: string) => {
+  if (!type) return "";
+
+  const upper = type.toUpperCase();
+
+  if (upper === "TRUEFALSE") return "TRUE/FALSE";
+  if (upper === "MULTICHOICE") return "MULTI SELECT QUESTIONS";
+
+  return upper; // MCQ, MTF, FTB etc
+};
 const normalizeQuestions = (rawQuestions: any[]) => {
   return rawQuestions.map((q: any, index: number) => {
-    const type = q.question_type?.toUpperCase(); // MCQ / FTB
+    const type = q.question_type?.toUpperCase(); // MCQ / FTB / MTF / TRUEFALSE / MULTICHOICE
+
     const isMCQ = type === "MCQ";
+    const isMulti = type === "MULTICHOICE";
+    const isMTF = type === "MTF";
+
+    let correctAnswer: string | string[] = "";
+
+    // ✅ MCQ → single correct index (number or string)
+    if (isMCQ && q.correct_option_index !== undefined && q.correct_option_index !== null) {
+      const idx = Number(q.correct_option_index);
+      if (!isNaN(idx)) {
+        correctAnswer = String.fromCharCode(65 + idx);
+      }
+    }
+
+    // ✅ MULTICHOICE → array of correct indexes
+    if (isMulti && Array.isArray(q.correct_option_index)) {
+      correctAnswer = q.correct_option_index.map((i: any) =>
+        String.fromCharCode(65 + Number(i))
+      );
+    }
+
+    // ✅ FTB / TRUEFALSE → direct correct answer string
+    if (type === "FTB" || type === "TRUEFALSE") {
+      correctAnswer = q.correct_answer ?? "";
+    }
+
+    // ✅ MTF → show pairs as options (left → right)
+    let options: { label: string; text: string }[] = [];
+
+    if ((isMCQ || isMulti) && Array.isArray(q.options)) {
+      options = q.options.map((opt: any, i: number) => ({
+        label: String.fromCharCode(65 + i),
+        text: opt.text,
+      }));
+    }
+
+ if (isMTF && Array.isArray(q.pairs)) {
+  options = q.pairs.map((pair: any, i: number) => ({
+    label: String.fromCharCode(65 + i),
+    text: pair.left,      // LEFT side only
+    right: pair.right,    // store RIGHT separately
+  }));
+}
 
     return {
       id: index + 1,
 
-      type: type, // "MCQ", "FTB"
+      type: type,
 
       bloomLevel: q.blooms_level
         ? q.blooms_level.charAt(0).toUpperCase() + q.blooms_level.slice(1)
@@ -212,27 +264,20 @@ const normalizeQuestions = (rawQuestions: any[]) => {
 
       bloomPercent: q.relevance_percentage ?? 0,
 
-      question: q.question_text,
+      question: q.question_text || type == 'MTF' && 'Match the following',
 
-      options: isMCQ && Array.isArray(q.options)
-        ? q.options.map((opt: any, i: number) => ({
-            label: String.fromCharCode(65 + i),
-            text: opt.text,
-          }))
-        : [],
+      options,
 
-      correctAnswer: isMCQ
-        ? String.fromCharCode(65 + q.correct_option_index)
-        : q.correct_answer ?? "",
+      correctAnswer,
 
-      question_type_rationale:
-        q.reasoning?.question_type_rationale ?? "—",
+      question_type_rationale: q.reasoning?.question_type_rationale ?? "—",
 
-      rationale:
-        q.reasoning?.question_type_rationale ?? "—",
+      rationale: q.reasoning?.question_type_rationale ?? "—",
     };
   });
 };
+
+
 
 pollGenerationStatus(
   result.job_id,
@@ -244,7 +289,7 @@ pollGenerationStatus(
     const questionsByType = assessmentData.questions;
 
     const rawQuestions = Object.values(questionsByType).flat();
-
+    console.log('rawQuestions', rawQuestions)
     const normalizedQuestions = normalizeQuestions(rawQuestions);
     console.log('normalizedQuestions', normalizedQuestions)
     setQuestions(normalizedQuestions);

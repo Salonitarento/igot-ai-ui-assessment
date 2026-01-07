@@ -29,6 +29,7 @@ import { toast } from "@/hooks/use-toast";
 interface QuestionOption {
   label: string;
   text: string;
+  right?: string; // right (only for MTF)
 }
 
 interface Question {
@@ -38,7 +39,7 @@ interface Question {
   bloomPercent: number;
   question: string;
   options: QuestionOption[];
-  correctAnswer: string;
+  correctAnswer: string | string[];
   rationale: string;
 }
 
@@ -145,7 +146,7 @@ const bloomColors: Record<string, { bg: string; text: string; border: string; li
 };
 
 const exportFormats = [
-  { id: "pdf", name: "PDF", icon: FileText, description: "Print-ready document" },
+  // { id: "pdf", name: "PDF", icon: FileText, description: "Print-ready document" },
   { id: "word", name: "Word", icon: FileType, description: "Editable .docx file" },
   { id: "json", name: "JSON", icon: FileJson, description: "Raw data format" },
   { id: "csv", name: "CSV", icon: FileJson, description: "CSV file" },
@@ -390,7 +391,7 @@ const handleExport = async () => {
             const isExpanded = expandedQuestions.includes(q.id);
             const isEditing = editingQuestionId === q.id;
             const currentData = isEditing && editForm ? editForm : q;
-            
+            const isMTF = currentData.type === "MTF";
             return (
               <div key={q.id} className="group">
                 {/* Question Header */}
@@ -411,7 +412,14 @@ const handleExport = async () => {
                   </button>
                   <div className="flex-1 min-w-0" onClick={() => !isEditing && toggleQuestion(q.id)}>
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs font-normal">{q.type}</Badge>
+                    <Badge variant="outline" className="text-xs font-normal">
+  {q.type === "TRUEFALSE"
+    ? "TRUE/FALSE"
+    : q.type === "MULTICHOICE"
+    ? "MULTI SELECT QUESTION"
+    : q.type}
+</Badge>
+
                       <Badge className={cn("text-xs", colors.light, colors.text, colors.border, "border")}>
                         {q.bloomLevel} • {q.bloomPercent}%
                       </Badge>
@@ -447,15 +455,7 @@ const handleExport = async () => {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditing(q);
-                        }}
-                        className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                     <></>
                     )}
                     <button
                       onClick={() => toggleQuestion(q.id)}
@@ -478,61 +478,114 @@ const handleExport = async () => {
                   <div className={cn("px-4 pb-4 pt-0", colors.light)}>
                     <div className="ml-12 space-y-4">
                       {/* Options */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {currentData.options.map((option, optIndex) => {
-                          const isCorrect = option.label === currentData.correctAnswer;
-                          return (
-                            <div
-                              key={option.label}
-                              className={cn(
-                                "relative flex items-start gap-3 p-3 rounded-lg border transition-all",
-                                isCorrect 
-                                  ? "bg-accent/10 border-accent/30 shadow-sm" 
-                                  : "bg-white/80 border-border"
-                              )}
-                            >
-                              {isEditing ? (
-                                <button
-                                  onClick={() => updateEditForm("correctAnswer", option.label)}
-                                  className={cn(
-                                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors cursor-pointer",
-                                    isCorrect ? "bg-accent text-white" : "bg-muted text-muted-foreground hover:bg-accent/50 hover:text-white"
-                                  )}
-                                  title="Click to set as correct answer"
-                                >
-                                  {option.label}
-                                </button>
-                              ) : (
-                                <div className={cn(
-                                  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                                  isCorrect ? "bg-accent text-white" : "bg-muted text-muted-foreground"
-                                )}>
-                                  {option.label}
-                                </div>
-                              )}
-                              {isEditing ? (
-                                <Input
-                                  value={option.text}
-                                  onChange={(e) => updateOptionText(optIndex, e.target.value)}
-                                  className="text-sm flex-1 h-8 bg-white"
-                                />
-                              ) : (
-                                <span className={cn(
-                                  "text-sm flex-1",
-                                  isCorrect ? "text-foreground font-medium" : "text-muted-foreground"
-                                )}>
-                                  {option.text}
-                                </span>
-                              )}
-                              {isCorrect && !isEditing && (
-                                <CheckCircle className="w-4 h-4 text-accent shrink-0" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                    {/* OPTIONS */}
+{isMTF ? (
+  /* ================= MTF : MATCHED ROW LAYOUT ================= */
+  <div className="bg-white/80 border border-border rounded-lg p-4">
+    <div className="space-y-2">
+      {currentData.options.map((option, i) => (
+        <div
+          key={i}
+          className="grid grid-cols-2 gap-4 items-stretch"
+        >
+          {/* LEFT CELL */}
+          <div className="p-2 rounded-md bg-muted text-sm text-foreground flex items-center">
+            {option.text}
+          </div>
+           
+          {/* RIGHT CELL */}
+          <div className="p-2 rounded-md bg-muted text-sm text-foreground flex items-center">
+            {option.right}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+) : (
+  /* ================= MCQ / MULTI CHOICE ================= */
+  <div className="grid grid-cols-2 gap-2">
+    {currentData.options.map((option, optIndex) => {
+      const isCorrect = Array.isArray(currentData.correctAnswer)
+        ? currentData.correctAnswer.includes(option.label)
+        : option.label === currentData.correctAnswer;
+
+      return (
+        <div
+          key={option.label}
+          className={cn(
+            "relative flex items-start gap-3 p-3 rounded-lg border transition-all",
+            isCorrect
+              ? "bg-accent/10 border-accent/30 shadow-sm"
+              : "bg-white/80 border-border"
+          )}
+        >
+          {/* OPTION LABEL */}
+          {isEditing ? (
+            <button
+              onClick={() => {
+                if (!editForm) return;
+
+                if (Array.isArray(editForm.correctAnswer)) {
+                  const exists = editForm.correctAnswer.includes(option.label);
+                  const updated = exists
+                    ? editForm.correctAnswer.filter(l => l !== option.label)
+                    : [...editForm.correctAnswer, option.label];
+
+                  updateEditForm("correctAnswer", updated as any);
+                } else {
+                  updateEditForm("correctAnswer", option.label);
+                }
+              }}
+              className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors cursor-pointer",
+                isCorrect
+                  ? "bg-accent text-white"
+                  : "bg-muted text-muted-foreground hover:bg-accent/50 hover:text-white"
+              )}
+              title="Click to set as correct answer"
+            >
+              {option.label}
+            </button>
+          ) : (
+            <div
+              className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                isCorrect ? "bg-accent text-white" : "bg-muted text-muted-foreground"
+              )}
+            >
+              {option.label}
+            </div>
+          )}
+
+          {/* OPTION TEXT */}
+          {isEditing ? (
+            <Input
+              value={option.text}
+              onChange={(e) => updateOptionText(optIndex, e.target.value)}
+              className="text-sm flex-1 h-8 bg-white"
+            />
+          ) : (
+            <span
+              className={cn(
+                "text-sm flex-1",
+                isCorrect ? "text-foreground font-medium" : "text-muted-foreground"
+              )}
+            >
+              {option.text}
+            </span>
+          )}
+
+          {isCorrect && !isEditing && (
+            <CheckCircle className="w-4 h-4 text-accent shrink-0" />
+          )}
+        </div>
+      );
+    })}
+  </div>
+)}
+
                        {/* correct answer */}
-                       {currentData?.type == 'FTB' &&
+                       {(currentData?.type == 'FTB' || currentData?.type == 'TRUEFALSE') &&
                       <div className="bg-blue-50/80 rounded-lg p-4 border border-blue-200">
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
@@ -607,7 +660,7 @@ const handleExport = async () => {
       {/* Export Options */}
       <div className="card-elevated p-4">
         <h4 className="text-sm font-medium text-foreground mb-3">Export Format</h4>
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           {exportFormats.map((format) => {
             const Icon = format.icon;
             const isSelected = selectedFormat === format.id;
