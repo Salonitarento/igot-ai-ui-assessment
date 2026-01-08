@@ -400,7 +400,10 @@ useEffect(() => {
       {/* Topics/Subjects */}
       <div className="card-elevated p-4">
         <h3 className="text-sm font-medium text-foreground mb-3">
-          Topics / Subjects / Competencies <span className="text-destructive">*</span>
+          {
+            assessmentType == 'standalone' ? 'Topics / Subjects / Competencies ' : 'Topics / Subjects '
+          }
+          <span className="text-destructive">*</span>
         </h3>
 
         <div className="flex gap-2 mb-2">
