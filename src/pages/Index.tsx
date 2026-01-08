@@ -19,7 +19,7 @@ const defaultQuestionTypes = [
 ];
 
 const Index = () => {
-  const [assessmentType, setAssessmentType] = useState("practice");
+  const [assessmentType, setAssessmentType] = useState("standalone");
   const [currentStep, setCurrentStep] = useState("content");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   console.log(currentStep,'currentStep')

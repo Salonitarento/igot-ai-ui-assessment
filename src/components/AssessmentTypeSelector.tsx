@@ -9,6 +9,12 @@ interface AssessmentTypeSelectorProps {
 
 const assessmentTypes = [
   {
+    id: "standalone",
+    name: "Standalone",
+    icon: ClipboardCheck,
+    description: "Standalone / Competency assessment",
+  },
+  {
     id: "practice",
     name: "Practice",
     icon: ClipboardCheck,

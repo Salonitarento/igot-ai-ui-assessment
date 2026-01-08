@@ -160,7 +160,7 @@ const ContentInputStep = ({
     onMaterialFilesChange(materialFiles.filter((_, i) => i !== index));
   };
 
-  const canProceed = topics.length > 0 && courseIds.length > 0;
+  const canProceed = assessmentType == 'standalone' ? topics.length > 0 && materialFiles?.length > 0 : topics.length > 0 && courseIds.length > 0;
 
 const selectedCourseLabels = useMemo(() => {
   if (courseIds.length === 0) return "Select course...";
@@ -295,110 +295,112 @@ useEffect(() => {
   return (
     <div className="space-y-4 stagger-children">
       {/* Course DO ID */}
-      <div className="card-elevated p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-foreground">Course DO ID <span className="text-destructive">*</span></h3>
-          {isComprehensive && (
-            <Badge variant="secondary" className="text-xs">Multi-select</Badge>
+      {
+        assessmentType != 'standalone' &&
+        <div className="card-elevated p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-foreground">Course DO ID <span className="text-destructive">*</span></h3>
+            {isComprehensive && (
+              <Badge variant="secondary" className="text-xs">Multi-select</Badge>
+            )}
+          </div>
+
+          <Popover open={courseSearchOpen} onOpenChange={setCourseSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={courseSearchOpen}
+                className="w-full justify-between h-10 text-left font-normal"
+                disabled={isCoursesLoading}
+              >
+                <span className="truncate">
+                  {isCoursesLoading ? "Loading courses..." : selectedCourseLabels}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
+              <Command>
+                <CommandInput placeholder="Search courses..." className="h-10" />
+                <CommandList onScroll={(e) => {
+                  const target = e.currentTarget;
+                  if (
+                    target.scrollTop + target.clientHeight >= target.scrollHeight - 20
+                  ) {
+                    fetchCourses();
+                  }
+                }}>
+                  <CommandEmpty>No course found.</CommandEmpty>
+                  <CommandGroup>
+                    {isCoursesLoading && (
+                      <div className="py-2 text-center text-xs text-muted-foreground">
+                        Loading more courses...
+                      </div>
+                    )}
+
+                    {!hasMoreCourses && (
+                      <div className="py-2 text-center text-xs text-muted-foreground">
+                        No more courses
+                      </div>
+                    )}
+                    {availableCourseIds.map((course) => (
+                      <CommandItem
+                        key={course.value}
+                        value={course.label}
+                        onSelect={() => handleCourseSelect(course.value)}
+                        className="py-2.5 cursor-pointer"
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded border mr-2 flex items-center justify-center",
+                          courseIds.includes(course.value)
+                            ? "bg-primary border-primary"
+                            : "border-muted-foreground/30"
+                        )}>
+                          {courseIds.includes(course.value) && (
+                            <Check className="w-3 h-3 text-primary-foreground" />
+                          )}
+                        </div>
+                        {course.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {courseIds.length > 0 && courseIds[0] !== "NA" && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {courseIds.map((id) => {
+                const course = availableCourseIds.find(c => c.value === id);
+
+                return (
+                  <Badge
+                    key={id}
+                    variant="secondary"
+                    className="text-xs px-2 py-1 flex items-center gap-1"
+                  >
+                    {course?.label ?? id}
+                    <button
+                      onClick={() => removeCourseId(id)}
+                      className="hover:text-destructive ml-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+
+            </div>
           )}
         </div>
-
-        <Popover open={courseSearchOpen} onOpenChange={setCourseSearchOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={courseSearchOpen}
-              className="w-full justify-between h-10 text-left font-normal"
-              disabled={isCoursesLoading}
-            >
-              <span className="truncate">
-                {isCoursesLoading ? "Loading courses..." : selectedCourseLabels}
-              </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
-            <Command>
-              <CommandInput placeholder="Search courses..." className="h-10" />
-              <CommandList onScroll={(e) => {
-                const target = e.currentTarget;
-                if (
-                  target.scrollTop + target.clientHeight >= target.scrollHeight - 20
-                ) {
-                  fetchCourses();
-                }
-              }}>
-                <CommandEmpty>No course found.</CommandEmpty>
-                <CommandGroup>
-                  {isCoursesLoading && (
-                    <div className="py-2 text-center text-xs text-muted-foreground">
-                      Loading more courses...
-                    </div>
-                  )}
-
-                  {!hasMoreCourses && (
-                    <div className="py-2 text-center text-xs text-muted-foreground">
-                      No more courses
-                    </div>
-                  )}
-                  {availableCourseIds.map((course) => (
-                    <CommandItem
-                      key={course.value}
-                      value={course.label}
-                      onSelect={() => handleCourseSelect(course.value)}
-                      className="py-2.5 cursor-pointer"
-                    >
-                      <div className={cn(
-                        "w-4 h-4 rounded border mr-2 flex items-center justify-center",
-                        courseIds.includes(course.value)
-                          ? "bg-primary border-primary"
-                          : "border-muted-foreground/30"
-                      )}>
-                        {courseIds.includes(course.value) && (
-                          <Check className="w-3 h-3 text-primary-foreground" />
-                        )}
-                      </div>
-                      {course.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
-        {courseIds.length > 0 && courseIds[0] !== "NA" && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-         {courseIds.map((id) => {
-  const course = availableCourseIds.find(c => c.value === id);
-
-  return (
-    <Badge
-      key={id}
-      variant="secondary"
-      className="text-xs px-2 py-1 flex items-center gap-1"
-    >
-      {course?.label ?? id}
-      <button
-        onClick={() => removeCourseId(id)}
-        className="hover:text-destructive ml-0.5"
-      >
-        <X className="w-3 h-3" />
-      </button>
-    </Badge>
-  );
-})}
-
-          </div>
-        )}
-      </div>
-
+}
       {/* Topics/Subjects */}
       <div className="card-elevated p-4">
         <h3 className="text-sm font-medium text-foreground mb-3">
-          Topics / Subjects <span className="text-destructive">*</span>
+          Topics / Subjects / Competencies <span className="text-destructive">*</span>
         </h3>
 
         <div className="flex gap-2 mb-2">
@@ -534,7 +536,7 @@ useEffect(() => {
 
         {/* Materials */}
         <div className="card-elevated p-4">
-          <h3 className="text-sm font-medium text-foreground mb-1">Materials</h3>
+          <h3 className="text-sm font-medium text-foreground mb-1">Materials {assessmentType == 'standalone' && <span className="text-destructive">*</span> }</h3>
           <p className="text-xs text-muted-foreground mb-3">optional, PDF, max 3×25MB</p>
 
           <label className={cn(
