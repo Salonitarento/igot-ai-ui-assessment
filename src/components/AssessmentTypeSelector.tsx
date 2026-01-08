@@ -8,6 +8,7 @@ interface AssessmentTypeSelectorProps {
 }
 
 const assessmentTypes = [
+
   {
     id: "practice",
     name: "Practice",
@@ -26,6 +27,12 @@ const assessmentTypes = [
     icon: BookOpen,
     description: "Multi-course evaluation",
   },
+    {
+    id: "standalone",
+    name: "Standalone / Competency assessment",
+    icon: ClipboardCheck,
+    description: "Standalone assessment",
+  }
 ];
 
 const AssessmentTypeSelector = ({ selected, onSelect, currentStep }: AssessmentTypeSelectorProps) => {
