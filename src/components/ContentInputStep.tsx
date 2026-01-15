@@ -59,7 +59,7 @@ const ContentInputStep = ({
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
   const PAGE_LIMIT = 100;
-
+const [courseQuery, setCourseQuery] = useState("");
   const [availableCourseIds, setAvailableCourseIds] = useState<CourseOption[]>([]);
   const [isCoursesLoading, setIsCoursesLoading] = useState(false);
   const [courseOffset, setCourseOffset] = useState(0);
@@ -173,6 +173,13 @@ const selectedCourseLabels = useMemo(() => {
 
   // useEffect(() => {
   //   if (!user?.access_token) return;
+useEffect(() => {
+  if (courseSearchOpen) {
+    setCourseOffset(0);
+    setHasMoreCourses(true);
+    fetchCourses(true);
+  }
+}, [courseQuery]);
 
   const fetchCourses = async (reset = false) => {
     if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
@@ -199,6 +206,7 @@ const selectedCourseLabels = useMemo(() => {
               sort_by: { createdOn: "desc" },
               limit: PAGE_LIMIT,
               offset: reset ? 0 : courseOffset,
+              query: courseQuery || undefined
             },
           }),
         }
@@ -323,7 +331,16 @@ useEffect(() => {
             </PopoverTrigger>
             <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
               <Command>
-                <CommandInput placeholder="Search courses..." className="h-10" />
+                  <CommandInput
+                    placeholder="Search courses..."
+                    className="h-10"
+                    value={courseQuery}
+                    onValueChange={(value) => {
+                      setCourseQuery(value);
+                      setCourseOffset(0);
+                      setHasMoreCourses(true);
+                    }}
+                  />
                 <CommandList onScroll={(e) => {
                   const target = e.currentTarget;
                   if (
