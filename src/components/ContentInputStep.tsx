@@ -202,7 +202,7 @@ useEffect(() => {
                 status: ["Live"],
                 courseCategory: ["Course"],
               },
-              fields: ["name"],
+              fields: ["name", 'language'],
               sort_by: { createdOn: "desc" },
               limit: PAGE_LIMIT,
               offset: reset ? 0 : courseOffset,
@@ -218,7 +218,7 @@ useEffect(() => {
       const newCourses: CourseOption[] =
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
-          label: item.name,
+          label: `${item.name} (${item?.language?.[0]})`,
         })) ?? [];
       setAvailableCourseIds((prev) =>
   reset ? newCourses : [...prev, ...newCourses]
