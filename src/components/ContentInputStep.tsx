@@ -9,7 +9,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   Upload,
   X,
-  Plus,
   File,
   ChevronRight,
   Check,
@@ -18,6 +17,9 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import Tooltip from "@mui/material/Tooltip";
+import { COMPETENCY_OPTIONS, SUB_THEME_MAP, SUB_THEME_OPTIONS, THEME_OPTIONS } from "./Constant";
+
 interface ContentInputStepProps {
   assessmentType: string;
   courseIds: string[];
@@ -59,12 +61,19 @@ const ContentInputStep = ({
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
   const PAGE_LIMIT = 100;
-const [courseQuery, setCourseQuery] = useState("");
+  const [courseQuery, setCourseQuery] = useState("");
   const [availableCourseIds, setAvailableCourseIds] = useState<CourseOption[]>([]);
   const [isCoursesLoading, setIsCoursesLoading] = useState(false);
   const [courseOffset, setCourseOffset] = useState(0);
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
+  const [openTheme, setOpenTheme] = useState(false);
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [searchTheme, setSearchTheme] = useState("");
+  const [openSubTheme, setOpenSubTheme] = useState(false);
+  const [selectedSubThemes, setSelectedSubThemes] = useState<string[]>([]);
+  const [searchSubTheme, setSearchSubTheme] = useState("");
   const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";
   const LANGUAGES = [
@@ -85,6 +94,9 @@ const [courseQuery, setCourseQuery] = useState("");
     //   setCourseSearchOpen(false);
     //   return;
     // }
+
+
+
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
@@ -160,26 +172,27 @@ const [courseQuery, setCourseQuery] = useState("");
     onMaterialFilesChange(materialFiles.filter((_, i) => i !== index));
   };
 
+
   const canProceed = assessmentType == 'standalone' ? topics.length > 0 && materialFiles?.length > 0 : topics.length > 0 && courseIds.length > 0;
 
-const selectedCourseLabels = useMemo(() => {
-  if (courseIds.length === 0) return "Select course...";
-  if (courseIds.length === 1) {
-    const course = availableCourseIds.find(c => c.value === courseIds[0]);
-    return course?.label || courseIds[0];
-  }
-  return `${courseIds.length} courses selected`;
-}, [courseIds, availableCourseIds]); // ✅ FIX
+  const selectedCourseLabels = useMemo(() => {
+    if (courseIds.length === 0) return "Select course...";
+    if (courseIds.length === 1) {
+      const course = availableCourseIds.find(c => c.value === courseIds[0]);
+      return course?.label || courseIds[0];
+    }
+    return `${courseIds.length} courses selected`;
+  }, [courseIds, availableCourseIds]); // ✅ FIX
 
   // useEffect(() => {
   //   if (!user?.access_token) return;
-useEffect(() => {
-  if (courseSearchOpen) {
-    setCourseOffset(0);
-    setHasMoreCourses(true);
-    fetchCourses(true);
-  }
-}, [courseQuery]);
+  useEffect(() => {
+    if (courseSearchOpen) {
+      setCourseOffset(0);
+      setHasMoreCourses(true);
+      fetchCourses(true);
+    }
+  }, [courseQuery]);
 
   const fetchCourses = async (reset = false) => {
     if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
@@ -221,8 +234,8 @@ useEffect(() => {
           label: `${item.name} (${item?.language?.[0]})`,
         })) ?? [];
       setAvailableCourseIds((prev) =>
-  reset ? newCourses : [...prev, ...newCourses]
-);
+        reset ? newCourses : [...prev, ...newCourses]
+      );
 
       setCourseOffset((prev) => (reset ? PAGE_LIMIT : prev + PAGE_LIMIT));
       setHasMoreCourses(newCourses.length === PAGE_LIMIT);
@@ -238,57 +251,57 @@ useEffect(() => {
     }
   };
 
-const fetchCoursesByIds = async (ids: string[]) => {
-  if (!user?.access_token || ids.length === 0) return;
+  const fetchCoursesByIds = async (ids: string[]) => {
+    if (!user?.access_token || ids.length === 0) return;
 
-  try {
-    const response = await fetch(
-      "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.access_token}`,
-        },
-        body: JSON.stringify({
-          request: {
-            filters: {
-              identifier: ids,
-            },
-            fields: ["name"],
-            limit: ids.length,
+    try {
+      const response = await fetch(
+        "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.access_token}`,
           },
-        }),
-      }
-    );
+          body: JSON.stringify({
+            request: {
+              filters: {
+                identifier: ids,
+              },
+              fields: ["name"],
+              limit: ids.length,
+            },
+          }),
+        }
+      );
 
-    if (!response.ok) return;
+      if (!response.ok) return;
 
-    const data = await response.json();
+      const data = await response.json();
 
-    const courses: CourseOption[] =
-      data?.result?.content?.map((item: any) => ({
-        value: item.identifier,
-        label: item.name,
-      })) ?? [];
+      const courses: CourseOption[] =
+        data?.result?.content?.map((item: any) => ({
+          value: item.identifier,
+          label: item.name,
+        })) ?? [];
 
-    setAvailableCourseIds((prev) => {
-      const map = new Map(prev.map(c => [c.value, c.label]));
-      courses.forEach(c => map.set(c.value, c.label));
+      setAvailableCourseIds((prev) => {
+        const map = new Map(prev.map(c => [c.value, c.label]));
+        courses.forEach(c => map.set(c.value, c.label));
 
-      // keep NA on top
-      const merged = Array.from(map, ([value, label]) => ({ value, label }));
-      return merged;
-    });
-  } catch (e) {
-    console.error("Failed to hydrate selected courses", e);
-  }
-};
-useEffect(() => {
-  if (courseIds.length > 0 && courseIds[0] !== "NA") {
-    fetchCoursesByIds(courseIds);
-  }
-}, [courseIds, user?.access_token]);
+        // keep NA on top
+        const merged = Array.from(map, ([value, label]) => ({ value, label }));
+        return merged;
+      });
+    } catch (e) {
+      console.error("Failed to hydrate selected courses", e);
+    }
+  };
+  useEffect(() => {
+    if (courseIds.length > 0 && courseIds[0] !== "NA") {
+      fetchCoursesByIds(courseIds);
+    }
+  }, [courseIds, user?.access_token]);
   // fetchCourses();
   // }, [user?.access_token]);
 
@@ -300,14 +313,73 @@ useEffect(() => {
     }
   }, [courseSearchOpen]);
 
+
+  const filteredThemes = useMemo(() => {
+    return Object.values(THEME_OPTIONS).filter((theme) =>
+      theme.toLowerCase().includes(searchTheme.toLowerCase())
+    );
+  }, [searchTheme]);
+
+  const toggleTheme = (theme: string) => {
+    setSelectedThemes((prev) =>
+      prev.includes(theme)
+        ? prev.filter((t) => t !== theme)
+        : [...prev, theme]
+    );
+  };
+
+  const filteredSubThemes = useMemo(() => {
+    if (selectedThemes.length === 0) return [];
+
+    const subThemes = selectedThemes.flatMap(
+      (theme) => SUB_THEME_MAP[theme as THEME_OPTIONS] || []
+    );
+
+    return subThemes.filter((subTheme) =>
+      subTheme.toLowerCase().includes(searchSubTheme.toLowerCase())
+    );
+  }, [selectedThemes, searchSubTheme]);
+
+  const toggleSubTheme = (subTheme: string) => {
+    setSelectedSubThemes((prev) =>
+      prev.includes(subTheme)
+        ? prev.filter((t) => t !== subTheme)
+        : [...prev, subTheme]
+    );
+  };
+
   return (
     <div className="space-y-4 stagger-children">
       {/* Course DO ID */}
       {
-        assessmentType != 'standalone' &&
+        assessmentType != 'standalone' && assessmentType !== 'Competency' &&
         <div className="card-elevated p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-foreground">Course DO ID <span className="text-destructive">*</span></h3>
+          <div className="flex  items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">Course DO ID
+              <span className="text-destructive">*</span></h3>
+            <Tooltip
+              title="Select the course this assessment belongs to. Only one course can be selected."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </Tooltip>
             {isComprehensive && (
               <Badge variant="secondary" className="text-xs">Multi-select</Badge>
             )}
@@ -331,16 +403,16 @@ useEffect(() => {
             </PopoverTrigger>
             <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
               <Command>
-                  <CommandInput
-                    placeholder="Search courses..."
-                    className="h-10"
-                    value={courseQuery}
-                    onValueChange={(value) => {
-                      setCourseQuery(value);
-                      setCourseOffset(0);
-                      setHasMoreCourses(true);
-                    }}
-                  />
+                <CommandInput
+                  placeholder="Search courses..."
+                  className="h-10"
+                  value={courseQuery}
+                  onValueChange={(value) => {
+                    setCourseQuery(value);
+                    setCourseOffset(0);
+                    setHasMoreCourses(true);
+                  }}
+                />
                 <CommandList onScroll={(e) => {
                   const target = e.currentTarget;
                   if (
@@ -413,27 +485,368 @@ useEffect(() => {
             </div>
           )}
         </div>
-}
+      }
+
+      {/* Competency Area  */}
+      {assessmentType === 'Competency' && (
+        <div className="card-elevated p-4">
+          <div className="flex items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">
+              Competency Area
+              <span className="text-destructive">*</span>
+            </h3>
+
+            <Tooltip
+              title="Select the relevant KCM competency that the assessment will evaluate. Select only one competency area."
+              arrow
+              placement="top"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+            </Tooltip>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {Object.values(COMPETENCY_OPTIONS).map((item) => {
+              const isSelected = selectedCompetency === item;
+
+              return (
+                <button
+                  key={item}
+                  onClick={() => setSelectedCompetency(item)}
+                  className={cn(
+                    "relative px-4 py-3 rounded-lg border text-sm font-medium transition-all duration-200",
+                    isSelected
+                      ? "border-primary bg-primary/5 text-primary shadow-soft"
+                      : "border-border text-muted-foreground hover:border-primary/40"
+                  )}
+                >
+                  {item}
+
+                  {isSelected && (
+                    <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Theme  */}
+      {assessmentType === "Competency" && (
+        <div className="card-elevated p-4">
+          <div className="flex items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">Theme</h3>
+
+            <Tooltip
+              title="Select one or more themes within the competency area"
+              arrow
+              placement="top"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 ml-3 text-muted-foreground cursor-help"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </Tooltip>
+
+            {isComprehensive && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                Multi-select
+              </Badge>
+            )}
+          </div>
+
+          {/* Combobox */}
+          <Popover open={openTheme} onOpenChange={setOpenTheme}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openTheme}
+                className="w-full justify-between h-10 text-left font-normal"
+              >
+                <span className="truncate">
+                  {selectedThemes.length > 0
+                    ? `${selectedThemes.length} selected`
+                    : "Select theme"}
+                </span>
+
+                <ChevronsUpDown className="w-4 h-4 ml-2 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent side="bottom" align="start" className=" w-full p-0">
+              <Command>
+                <CommandInput
+                  placeholder="Search theme..."
+                  value={searchTheme}
+                  onValueChange={setSearchTheme}
+                />
+
+                <CommandList>
+                  <CommandGroup>
+                    {filteredThemes.map((theme) => {
+                      const selected = selectedThemes.includes(theme);
+
+                      return (
+                        <CommandItem
+                          key={theme}
+                          onSelect={() => toggleTheme(theme)}
+                          className="cursor-pointer py-2.5"
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border mr-2 flex items-center justify-center
+                      ${selected
+                                ? "bg-primary border-primary"
+                                : "border-muted-foreground/30"
+                              }`}
+                          >
+                            {selected && (
+                              <Check className="w-3 h-3 text-primary-foreground" />
+                            )}
+                          </div>
+
+                          {theme}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {selectedThemes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {selectedThemes.map((theme) => (
+                <Badge
+                  key={theme}
+                  variant="secondary"
+                  className="text-xs px-2 py-1 flex items-center gap-1"
+                >
+                  {theme}
+
+                  <button
+                    onClick={() => toggleTheme(theme)}
+                    className="hover:text-destructive ml-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sub Theme  */}
+      {assessmentType === "Competency" && (
+        <div className="card-elevated p-4">
+          <div className="flex items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">
+              Sub Theme
+            </h3>
+
+            <Tooltip
+              title="Select specific sub-themes to focus the assessment"
+              arrow
+              placement="top"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 ml-3 text-muted-foreground cursor-help"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </Tooltip>
+          </div>
+
+          {/* Combobox */}
+          <Popover open={openSubTheme} onOpenChange={setOpenSubTheme}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openSubTheme}
+                className="w-full justify-between h-10 text-left font-normal"
+                disabled={selectedThemes.length === 0}
+              >
+                <span className="truncate">
+                  {selectedSubThemes.length > 0
+                    ? `${selectedSubThemes.length} selected`
+                    : "Select sub-theme"}
+                </span>
+
+                <ChevronsUpDown className="w-4 h-4 ml-2 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent side="bottom" align="start" className="w-full p-0">
+              <Command>
+                <CommandInput
+                  placeholder="Search sub-theme..."
+                  value={searchSubTheme}
+                  onValueChange={setSearchSubTheme}
+                />
+
+                <CommandList>
+                  <CommandEmpty>No sub-theme found.</CommandEmpty>
+
+                  <CommandGroup>
+                    {filteredSubThemes.map((subTheme) => {
+                      const selected = selectedSubThemes.includes(subTheme);
+
+                      return (
+                        <CommandItem
+                          key={subTheme}
+                          onSelect={() => toggleSubTheme(subTheme)}
+                          className="cursor-pointer py-2.5"
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border mr-2 flex items-center justify-center
+                      ${selected
+                                ? "bg-primary border-primary"
+                                : "border-muted-foreground/30"
+                              }`}
+                          >
+                            {selected && (
+                              <Check className="w-3 h-3 text-primary-foreground" />
+                            )}
+                          </div>
+
+                          {subTheme}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Selected Chips */}
+          {selectedSubThemes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {selectedSubThemes.map((subTheme) => (
+                <Badge
+                  key={subTheme}
+                  variant="secondary"
+                  className="text-xs px-2 py-1 flex items-center gap-1"
+                >
+                  {subTheme}
+
+                  <button
+                    onClick={() => toggleSubTheme(subTheme)}
+                    className="hover:text-destructive ml-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Topics/Subjects */}
+
       <div className="card-elevated p-4">
-        <h3 className="text-sm font-medium text-foreground mb-3">
-          {
-            assessmentType == 'standalone' ? 'Topics / Subjects / Competencies ' : 'Topics / Subjects '
-          }
-          <span className="text-destructive">*</span>
-        </h3>
+        <div className="flex items-center mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            {assessmentType == "standalone"
+              ? "Topics / Subjects / Competencies "
+              : "Topics / Subjects "}
+            <span className="text-destructive">*</span>
+          </h3>
+
+          <Tooltip
+            title="Enter course learning objectives instead of broad topics. Questions should align directly to measurable outcomes."
+            arrow
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  fontSize: "14px",
+                  padding: "8px 12px",
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                }
+              },
+              arrow: {
+                sx: {
+                  color: "#fff"
+                }
+              }
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16v-4"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+          </Tooltip>
+        </div>
 
         <div className="flex gap-2 mb-2">
           <Input
             placeholder="Enter topic and press Enter..."
             value={newTopic}
             onChange={(e) => setNewTopic(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTopic())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTopic();
+              }
+            }}
+            onBlur={() => {
+              if (newTopic.trim()) {
+                addTopic();
+              }
+            }}
             className="h-10"
           />
-          <Button onClick={addTopic} size="icon" variant="secondary" className="h-10 w-10 shrink-0">
-            <Plus className="w-4 h-4" />
-          </Button>
         </div>
 
         {topics.length > 0 && (
@@ -445,7 +858,10 @@ useEffect(() => {
                 className="text-xs px-2 py-1 flex items-center gap-1 bg-accent/10 text-accent border-accent/20"
               >
                 {topic}
-                <button onClick={() => removeTopic(topic)} className="hover:text-destructive ml-0.5">
+                <button
+                  onClick={() => removeTopic(topic)}
+                  className="hover:text-destructive ml-0.5"
+                >
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
@@ -453,10 +869,38 @@ useEffect(() => {
           </div>
         )}
       </div>
+
+
+      {/* Language */}
       <div className="card-elevated p-4">
-        <h3 className="text-sm font-medium text-foreground mb-3">
-          Language <span className="text-destructive">*</span>
-        </h3>
+        <div className="flex items-center mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Language <span className="text-destructive">*</span>
+          </h3>
+          <Tooltip
+            title="Language"
+            arrow
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  fontSize: "14px",
+                  padding: "8px 12px",
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                }
+              },
+              arrow: {
+                sx: {
+                  color: "#fff"
+                }
+              }
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          </Tooltip>
+        </div>
 
         <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
           <PopoverTrigger asChild>
@@ -502,11 +946,38 @@ useEffect(() => {
           </PopoverContent>
         </Popover>
       </div>
+
+
       {/* Additional Notes */}
       <div className="card-elevated p-4">
-        <h3 className="text-sm font-medium text-foreground mb-3">
-          Additional Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span>
-        </h3>
+        <div className="flex items-center mb-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Additional Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+          </h3>
+          <Tooltip
+            title="Add any additional context, instructions, or specific requirements for the assessment generation."
+            arrow
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  fontSize: "14px",
+                  padding: "8px 12px",
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                }
+              },
+              arrow: {
+                sx: {
+                  color: "#fff"
+                }
+              }
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          </Tooltip>
+        </div>
         <Textarea
           placeholder="Enter additional notes or description..."
           value={notes}
@@ -519,7 +990,34 @@ useEffect(() => {
       <div className="grid grid-cols-2 gap-4">
         {/* Transcripts */}
         <div className="card-elevated p-4">
-          <h3 className="text-sm font-medium text-foreground mb-1">Transcripts</h3>
+          <div className="flex items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">Transcripts</h3>
+            <Tooltip
+              title="Upload course transcripts in VTT or TXT format to help generate questions from lecture content."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </Tooltip>
+          </div>
+
+
           <p className="text-xs text-muted-foreground mb-3">optional, VTT/TXT, max 10</p>
 
           <label className={cn(
@@ -556,7 +1054,32 @@ useEffect(() => {
 
         {/* Materials */}
         <div className="card-elevated p-4">
-          <h3 className="text-sm font-medium text-foreground mb-1">Materials {assessmentType == 'standalone' && <span className="text-destructive">*</span> }</h3>
+          <div className="flex items-center mb-3">
+            <h3 className="text-sm font-medium text-foreground">Materials {assessmentType == 'standalone' && <span className="text-destructive">*</span>}</h3>
+            <Tooltip
+              title="Upload additional PDFs or reference materials such as policy documents, scheme guidelines, circulars, or case studies. These help generate questions aligned with real policy contexts."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </Tooltip>
+          </div>
           <p className="text-xs text-muted-foreground mb-3">optional, PDF, max 3×25MB</p>
 
           <label className={cn(
@@ -604,5 +1127,4 @@ useEffect(() => {
     </div>
   );
 };
-
 export default ContentInputStep;

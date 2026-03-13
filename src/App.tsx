@@ -2,11 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, HashRouter } from "react-router-dom";
+import { Routes, Route, Navigate, HashRouter } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import PastAssessmentsPage from "./pages/PastAssessmentsPage";
+import MainLayout from "./components/Layout/MainLayout";
+
 
 const queryClient = new QueryClient();
 
@@ -37,14 +40,30 @@ const App = () => (
         <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
-            />
+
+            {/* Layout with Header */}
+            <Route element={<MainLayout />}>
+
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/past-assessments"
+                element={
+                  <ProtectedRoute>
+                    <PastAssessmentsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+            </Route>
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
