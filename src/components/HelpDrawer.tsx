@@ -59,7 +59,6 @@ const HelpDrawer = ({ open, onClose }) => {
             direction="right"
             size={420}
             duration={350}
-            lockBackgroundScroll
         >
             <div className="h-full flex flex-col bg-white">
 

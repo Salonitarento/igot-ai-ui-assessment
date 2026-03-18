@@ -1,3 +1,4 @@
+import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface AuthUser {
@@ -50,26 +51,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: formData.toString(),
       });
 
+
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return { 
-          success: false, 
-          error: errorData.detail || "Invalid username or password" 
+        return {
+          success: false,
+          error: errorData.detail || "Invalid username or password"
         };
       }
 
       const data = await response.json();
-      
       const authUser: AuthUser = {
         username,
-        access_token: data.access_token,
+        access_token: ACCESS_TOKEN_2,
         refresh_token: data.refresh_token,
         expires_in: data.expires_in,
       };
-
+     
       setUser(authUser);
       localStorage.setItem("auth_user", JSON.stringify(authUser));
-      
+
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);

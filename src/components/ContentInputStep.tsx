@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Tooltip from "@mui/material/Tooltip";
 import { COMPETENCY_OPTIONS, SUB_THEME_MAP, SUB_THEME_OPTIONS, THEME_OPTIONS } from "./Constant";
+import { ACCESS_TOKEN_2 } from "./ConstantAPI";
 
 interface ContentInputStepProps {
   assessmentType: string;
@@ -74,6 +75,8 @@ const ContentInputStep = ({
   const [openSubTheme, setOpenSubTheme] = useState(false);
   const [selectedSubThemes, setSelectedSubThemes] = useState<string[]>([]);
   const [searchSubTheme, setSearchSubTheme] = useState("");
+  const [learningOutcomes, setLearningOutcomes] = useState<string[]>([]);
+  const [courseWeights, setCourseWeights] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";
   const LANGUAGES = [
@@ -89,18 +92,11 @@ const ContentInputStep = ({
     { value: "Gujarati", label: "Gujarati" },
   ];
   const handleCourseSelect = (value: string) => {
-    // if (value === "NA") {
-    //   onCourseIdsChange(["NA"]);
-    //   setCourseSearchOpen(false);
-    //   return;
-    // }
-
-
-
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
       setCourseSearchOpen(false);
+      fetchLearningOutcomes(value);
     } else {
       const filtered = courseIds.filter(id => id !== "NA");
       if (filtered.includes(value)) {
@@ -114,6 +110,8 @@ const ContentInputStep = ({
   const removeCourseId = (id: string) => {
     onCourseIdsChange(courseIds.filter((c) => c !== id));
   };
+
+
   const addTopic = () => {
     if (newTopic.trim() && !topics.includes(newTopic.trim())) {
       onTopicsChange([...topics, newTopic.trim()]);
@@ -195,7 +193,8 @@ const ContentInputStep = ({
   }, [courseQuery]);
 
   const fetchCourses = async (reset = false) => {
-    if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
+    // if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
+    if (isCoursesLoading || (!hasMoreCourses && !reset)) return;
 
     try {
       setIsCoursesLoading(true);
@@ -206,7 +205,8 @@ const ContentInputStep = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${user.access_token}`,
+            // Authorization: `Bearer ${user.access_token}`,
+            "x-auth-token": ACCESS_TOKEN_2,
           },
           body: JSON.stringify({
             request: {
@@ -225,9 +225,14 @@ const ContentInputStep = ({
         }
       );
 
+
+      console.log(response, '======= response')
+
       if (!response.ok) throw new Error("Failed to fetch courses");
 
       const data = await response.json();
+
+      console.log(data, '======= data APi v1')
       const newCourses: CourseOption[] =
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
@@ -252,7 +257,8 @@ const ContentInputStep = ({
   };
 
   const fetchCoursesByIds = async (ids: string[]) => {
-    if (!user?.access_token || ids.length === 0) return;
+    // if (!user?.access_token || ids.length === 0) return;
+    if (ids.length === 0) return;
 
     try {
       const response = await fetch(
@@ -261,7 +267,8 @@ const ContentInputStep = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${user.access_token}`,
+            // Authorization: `Bearer ${user.access_token}`,
+            "x-auth-token": ACCESS_TOKEN_2,
           },
           body: JSON.stringify({
             request: {
@@ -297,13 +304,12 @@ const ContentInputStep = ({
       console.error("Failed to hydrate selected courses", e);
     }
   };
+
   useEffect(() => {
     if (courseIds.length > 0 && courseIds[0] !== "NA") {
-      fetchCoursesByIds(courseIds);
+      fetchLearningOutcomes(courseIds[0]);
     }
   }, [courseIds, user?.access_token]);
-  // fetchCourses();
-  // }, [user?.access_token]);
 
   useEffect(() => {
     if (courseSearchOpen) {
@@ -312,6 +318,61 @@ const ContentInputStep = ({
       fetchCourses(true);
     }
   }, [courseSearchOpen]);
+
+  const parseLearningOutcomes = (html: string): string[] => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const elements = doc.querySelectorAll("li, p");
+
+    return Array.from(elements)
+      .map(el => el.textContent?.replace(/\s+/g, " ").trim())
+      .filter(Boolean) as string[];
+  };
+
+  const fetchLearningOutcomes = async (courseId: string) => {
+    // if (!user?.access_token || !courseId) return;
+    if (!courseId) return;
+
+    try {
+      const response = await fetch(
+        `https://portal.igotkarmayogi.gov.in/api/content/v1/read/${courseId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // Authorization: `Bearer ${user.access_token}`,
+            "x-auth-token": ACCESS_TOKEN_2,
+          },
+        }
+      );
+
+      console.log(response, "====== response")
+
+      if (!response.ok) throw new Error("Failed to fetch learning outcomes");
+
+      const data = await response.json();
+
+      const htmlInstructions = data?.result?.content?.instructions || "";
+
+      console.log(htmlInstructions, "==== HTML from API");
+
+      const outcomes = parseLearningOutcomes(htmlInstructions);
+
+      console.log(outcomes, "==== parsed outcomes");
+
+      setLearningOutcomes(outcomes);
+
+    } catch (error) {
+      console.error("Learning Outcomes fetch error:", error);
+
+      toast({
+        title: "Error",
+        description: "Unable to load learning outcomes",
+        variant: "destructive",
+      });
+    }
+  };
 
 
   const filteredThemes = useMemo(() => {
@@ -347,6 +408,24 @@ const ContentInputStep = ({
         : [...prev, subTheme]
     );
   };
+
+  const totalWeight = useMemo(() => {
+    return Object.values(courseWeights).reduce((sum, w) => sum + (Number(w) || 0), 0);
+  }, [courseWeights]);
+
+
+  const handleWeightChange = (courseId: string, value: string) => {
+    const num = Math.min(100, Math.max(0, Number(value)));
+
+    setCourseWeights(prev => ({
+      ...prev,
+      [courseId]: num
+    }));
+  };
+
+  useEffect(() => {
+    console.log(learningOutcomes, "======== learningOutcomes");
+  }, [learningOutcomes]);
 
   return (
     <div className="space-y-4 stagger-children">
@@ -460,7 +539,33 @@ const ContentInputStep = ({
             </PopoverContent>
           </Popover>
 
-          {courseIds.length > 0 && courseIds[0] !== "NA" && (
+          {/* Selected Chips */}
+          {courseIds.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {courseIds.map((id) => {
+                const course = availableCourseIds.find(c => c.value === id);
+
+                return (
+                  <Badge
+                    key={id}
+                    variant="secondary"
+                    className="text-xs px-2 py-1 flex items-center gap-1"
+                  >
+                    {course?.label ?? id}
+
+                    <button
+                      onClick={() => removeCourseId(id)}
+                      className="hover:text-destructive ml-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+
+          {/* {courseIds.length > 0 && courseIds[0] !== "NA" && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {courseIds.map((id) => {
                 const course = availableCourseIds.find(c => c.value === id);
@@ -483,9 +588,138 @@ const ContentInputStep = ({
               })}
 
             </div>
-          )}
+          )} */}
+
         </div>
       }
+
+      {/* Learning Outcomes */}
+      {learningOutcomes.length > 0 && (
+        <div className="card-elevated p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-book-open w-4 h-4 text-primary"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
+            <h3 className="text-sm font-medium text-foreground">Learning Outcomes</h3>
+            <Tooltip
+              title="Learning outcomes mapped to the selected course(s)"
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-1" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </Tooltip>
+          </div>
+          <ul className="list-disc space-y-1 text-sm text-muted-foreground">
+            {learningOutcomes.map((outcome, index) => (
+              <li key={index} className="flex items-start gap-2 text-xs text-foreground">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-check w-3.5 h-3.5 text-accent mt-0.5 shrink-0"><path d="M20 6 9 17l-5-5"></path></svg>
+                <span>{outcome}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+
+      {/* Course Weightage */}
+      {assessmentType === "comprehensive" && courseIds.length > 1 && (
+        <div className="card-elevated p-4">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-weight w-4 h-4 text-primary"><circle cx="12" cy="5" r="3"></circle><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"></path></svg>
+              <h3 className="text-sm font-medium text-foreground">
+                Course Weightage
+              </h3>
+
+              <Tooltip
+                title="Specify the percentage weight assigned to each course in the assessment. The total across all courses must equal 100%."
+                arrow
+                placement="top"
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      backgroundColor: "#fff",
+                      color: "#000",
+                      fontSize: "14px",
+                      padding: "8px 12px",
+                      boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                    }
+                  },
+                  arrow: {
+                    sx: {
+                      color: "#fff"
+                    }
+                  }
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-1" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+              </Tooltip>
+            </div>
+
+            {/* Total */}
+            <Badge
+              variant="secondary"
+              className={cn(
+                "text-xs", "font-medium",
+                totalWeight === 100
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-500"
+              )}
+            >
+              {totalWeight}% / 100%
+            </Badge>
+          </div>
+
+          {/* Course Rows */}
+          <div className="space-y-3">
+            {courseIds.map((id) => {
+              const course = availableCourseIds.find((c) => c.value === id);
+
+              return (
+                <div
+                  key={id}
+                  className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 justify-between"
+                >
+                  <span className="text-sm text-foreground">
+                    {course?.label || id}
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={courseWeights[id] ?? 0}
+                      onChange={(e) =>
+                        handleWeightChange(id, e.target.value)
+                      }
+                      className="w-20 h-9 text-center"
+                    />
+
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Competency Area  */}
       {assessmentType === 'Competency' && (
@@ -778,14 +1012,12 @@ const ContentInputStep = ({
         </div>
       )}
 
-      {/* Topics/Subjects */}
+      {/* Topics/Subjects / Key Themes/Modules */}
 
       <div className="card-elevated p-4">
         <div className="flex items-center mb-3">
           <h3 className="text-sm font-medium text-foreground">
-            {assessmentType == "standalone"
-              ? "Topics / Subjects / Competencies "
-              : "Topics / Subjects "}
+            Key Themes/Modules
             <span className="text-destructive">*</span>
           </h3>
 
@@ -872,12 +1104,16 @@ const ContentInputStep = ({
 
 
       {/* Language */}
-      <div className="card-elevated p-4">
+      {assessmentType !== "Competency" && <div className="card-elevated p-4">
         <div className="flex items-center mb-3">
-          <h3 className="text-sm font-medium text-foreground">
-            Language <span className="text-destructive">*</span>
-          </h3>
-          <Tooltip
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-globe w-4 h-4 text-primary"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+            <h3 className="text-sm font-medium text-foreground">
+              Assessment Language
+              <span className="text-destructive">*</span>
+            </h3>
+          </div>
+          {/* <Tooltip
             title="Language"
             arrow
             placement="top"
@@ -899,7 +1135,7 @@ const ContentInputStep = ({
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-          </Tooltip>
+          </Tooltip> */}
         </div>
 
         <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
@@ -946,7 +1182,7 @@ const ContentInputStep = ({
           </PopoverContent>
         </Popover>
       </div>
-
+      }
 
       {/* Additional Notes */}
       <div className="card-elevated p-4">
@@ -987,10 +1223,14 @@ const ContentInputStep = ({
       </div>
 
       {/* File Uploads */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className={cn(
+        "grid gap-4",
+        assessmentType !== "Competency" ? "grid-cols-2" : "grid-cols-1"
+      )}>
+
         {/* Transcripts */}
-        <div className="card-elevated p-4">
-          <div className="flex items-center mb-3">
+        {assessmentType !== "Competency" && <div className="card-elevated p-4">
+          <div className="flex items-center">
             <h3 className="text-sm font-medium text-foreground">Transcripts</h3>
             <Tooltip
               title="Upload course transcripts in VTT or TXT format to help generate questions from lecture content."
@@ -1050,15 +1290,14 @@ const ContentInputStep = ({
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
-        {/* Materials */}
+        {/* Supporting Documents */}
         <div className="card-elevated p-4">
-          <div className="flex items-center mb-3">
-            <h3 className="text-sm font-medium text-foreground">Materials {assessmentType == 'standalone' && <span className="text-destructive">*</span>}</h3>
+          <div className="flex items-center">
+            <h3 className="text-sm font-medium text-foreground">Supporting Documents {assessmentType == 'standalone' && <span className="text-destructive">*</span>}</h3>
             <Tooltip
               title="Upload additional PDFs or reference materials such as policy documents, scheme guidelines, circulars, or case studies. These help generate questions aligned with real policy contexts."
-              arrow
               placement="top"
               componentsProps={{
                 tooltip: {
