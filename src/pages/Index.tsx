@@ -8,6 +8,8 @@ import ResultsStep from "@/components/ResultsStep";
 import { toast } from "@/hooks/use-toast";
 import { ListChecks, ToggleLeft, MessageSquare, FileText } from "lucide-react";
 import { GenerateLoaderDialog } from "@/components/common/GenerateLoaderDialog";
+import Tooltip from "@mui/material/Tooltip";
+import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
 
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
@@ -22,7 +24,7 @@ const Index = () => {
   const [assessmentType, setAssessmentType] = useState("practice");
   const [currentStep, setCurrentStep] = useState("content");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  console.log(currentStep,'currentStep')
+  console.log(currentStep, 'currentStep')
   const [courseIds, setCourseIds] = useState<any>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
@@ -42,7 +44,7 @@ const Index = () => {
     create: 10,
   });
   const [timeLimit, setTimeLimit] = useState(30);
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -58,11 +60,11 @@ const Index = () => {
       });
       return;
     }
-    
+
     setCompletedSteps((prev) => [...new Set([...prev, "content"])]);
     setCurrentStep("configuration");
   };
-  console.log('transcriptFiles', transcriptFiles , materialFiles)
+  console.log('transcriptFiles', transcriptFiles, materialFiles)
   // const handleGenerate = async () => {
   //   const bloomTotal = Object.values(bloomValues).reduce((sum, v) => sum + v, 0);
   //   const totalQuestions = questionTypes
@@ -89,240 +91,248 @@ const Index = () => {
 
   //   setIsGenerating(true);
   //   await new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
   //   setIsGenerated(true);
   //   setCompletedSteps((prev) => [...new Set([...prev, "configuration"])]);
   //   setCurrentStep("results");
-    
+
   //   toast({
   //     title: "Assessment Generated!",
   //     description: `${totalQuestions} questions created.`,
   //   });
-    
+
   //   setIsGenerating(false);
   // };
-const pollGenerationStatus = async (
-  jobId: string,
-  onComplete: (data: any) => void,
-  onError: (error: any) => void
-) => {
-  const poll = async () => {
-    try {
-      const response = await fetch(
-        `${BASE_URL}/ai-assment-generation/api/v1/status/${jobId}`
-      );
+  const pollGenerationStatus = async (
+    jobId: string,
+    onComplete: (data: any) => void,
+    onError: (error: any) => void
+  ) => {
+    const poll = async () => {
+      try {
+        const response = await fetch(
+          `${BASE_URL}/ai-assment-generation/api/v2/status/${jobId}`
+          , {
+            headers: {
+              "x-auth-token": ACCESS_TOKEN_2,
+            }
+          }
+        );
 
-      const result = await response.json();
-      console.log("Status response:", result);
+        const result = await response.json();
+        console.log("Status response:", result);
 
-      if (result.status === "COMPLETED") {
-        onComplete(result);
-        return;
+        if (result.status === "COMPLETED") {
+          onComplete(result);
+          return;
+        }
+
+        if (result.status === "FAILED") {
+          // onError(result); 
+          onComplete(result);
+          return;
+        }
+        setTimeout(poll, 5000);
+      } catch (err) {
+        onError(err);
       }
+    };
 
-      if (result.status === "FAILED") {
-        // onError(result); 
-        onComplete(result);
-        return;
-      }
-      setTimeout(poll, 5000);
-    } catch (err) {
-      onError(err);
-    }
+    poll();
   };
 
-  poll();
-};
-
-const handleGenerate = async (source: "generate" | "regenerate" = "generate") => {
-  setIsGenerating(true);
-  const enabledQuestionTypes = questionTypes
-    .filter(q => q.enabled && q.count > 0)
-    .map(q => q.id);
-  console.log('enabledQuestionTypes',questionTypes)
-  const totalQuestions = questionTypes
-    .filter(q => q.enabled)
-    .reduce((sum, q) => sum + q.count, 0);
-const questionTypeCounts = questionTypes
-  .filter(q => q.enabled && q.count > 0)
-  .reduce((acc: Record<string, number>, q) => {
-    acc[q.id] = q.count;
-    return acc;
-  }, {});
-  const formData = new FormData();
-formData.append(
-  "question_type_counts",
-  JSON.stringify(questionTypeCounts)
-);
-
-  formData.append("course_ids", courseIds);
-  const force : any  = (source == 'generate') ? false : true
-  formData.append("force", force);
-
-  // 🔹 From this component
-  formData.append("assessment_type", assessmentType);
-  formData.append("difficulty", assessmentLevel);
-  formData.append("total_questions", totalQuestions.toString());
-
- enabledQuestionTypes.forEach(type => {
-  formData.append("question_types", type);
-});
-
-
-  formData.append("time_limit", timeLimit.toString());
-  formData.append("blooms_config", JSON.stringify(bloomValues));
-
-  // 🔹 Dummy placeholders
-  formData.append("topic_names", JSON.stringify(topics));
-  formData.append("language", (language).toLowerCase());
-  // formData.append("additional_instructions", "Auto-generated");
-// 🔹 Append transcript files
-[...transcriptFiles, ...materialFiles].forEach(file => {
-  formData.append("files", file);
-});
-
-  try {
-    const response = await fetch(`${BASE_URL}/ai-assment-generation/api/v1/generate`, {
-        method: "POST",
-        body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error("Generation failed");
-      }
-    
-
-    const result = await response.json();
-    console.log("Generate response:", result);
-    setSpecificCourseId(result.job_id)
- const formatQuestionType = (type?: string) => {
-  if (!type) return "";
-
-  const upper = type.toUpperCase();
-
-  if (upper === "TRUEFALSE") return "TRUE/FALSE";
-  if (upper === "MULTICHOICE") return "MULTI SELECT QUESTIONS";
-
-  return upper; // MCQ, MTF, FTB etc
-};
-const normalizeQuestions = (rawQuestions: any[]) => {
-  return rawQuestions.map((q: any, index: number) => {
-    const type = q.question_type?.toUpperCase(); // MCQ / FTB / MTF / TRUEFALSE / MULTICHOICE
-
-    const isMCQ = type === "MCQ";
-    const isMulti = type === "MULTICHOICE";
-    const isMTF = type === "MTF";
-
-    let correctAnswer: string | string[] = "";
-
-    // ✅ MCQ → single correct index (number or string)
-    if (isMCQ && q.correct_option_index !== undefined && q.correct_option_index !== null) {
-      const idx = Number(q.correct_option_index);
-      if (!isNaN(idx)) {
-        correctAnswer = String.fromCharCode(65 + idx);
-      }
-    }
-
-    // ✅ MULTICHOICE → array of correct indexes
-    if (isMulti && Array.isArray(q.correct_option_index)) {
-      correctAnswer = q.correct_option_index.map((i: any) =>
-        String.fromCharCode(65 + Number(i))
-      );
-    }
-
-    // ✅ FTB / TRUEFALSE → direct correct answer string
-    if (type === "FTB" || type === "TRUEFALSE") {
-      correctAnswer = q.correct_answer ?? "";
-    }
-
-    // ✅ MTF → show pairs as options (left → right)
-    let options: { label: string; text: string }[] = [];
-
-    if ((isMCQ || isMulti) && Array.isArray(q.options)) {
-      options = q.options.map((opt: any, i: number) => ({
-        label: String.fromCharCode(65 + i),
-        text: opt.text,
-      }));
-    }
-
- if (isMTF && Array.isArray(q.pairs)) {
-  options = q.pairs.map((pair: any, i: number) => ({
-    label: String.fromCharCode(65 + i),
-    text: pair.left,      // LEFT side only
-    right: pair.right,    // store RIGHT separately
-  }));
-}
-
-    return {
-      id: index + 1,
-
-      type: type,
-
-      bloomLevel: q.blooms_level
-        ? q.blooms_level.charAt(0).toUpperCase() + q.blooms_level.slice(1)
-        : "Remember",
-
-      bloomPercent: q.relevance_percentage ?? 0,
-
-      question: q.question_text || type == 'MTF' && 'Match the following',
-
-      options,
-
-      correctAnswer,
-
-      question_type_rationale: q.reasoning?.question_type_rationale ?? "—",
-
-      rationale: q.reasoning?.question_type_rationale ?? "—",
-    };
-  });
-};
-
-
-
-pollGenerationStatus(
-  result.job_id,
-  (completedData) => {
-    console.log("Generation completed:", completedData);
-
-    const assessmentData = JSON.parse(completedData.assessment_data);
-
-    const questionsByType = assessmentData.questions;
-
-    const rawQuestions = Object.values(questionsByType).flat();
-    console.log('rawQuestions', rawQuestions)
-    const normalizedQuestions = normalizeQuestions(rawQuestions);
-    console.log('normalizedQuestions', normalizedQuestions)
-    setQuestions(normalizedQuestions);
-
-    setCurrentStep("results");
-
-    setIsGenerating(false);
-    setIsGenerated(true);
-
-    setCompletedSteps((prev) =>
-      [...new Set([...prev, "configuration"])]
+  const handleGenerate = async (source: "generate" | "regenerate" = "generate") => {
+    setIsGenerating(true);
+    const enabledQuestionTypes = questionTypes
+      .filter(q => q.enabled && q.count > 0)
+      .map(q => q.id);
+    console.log('enabledQuestionTypes', questionTypes)
+    const totalQuestions = questionTypes
+      .filter(q => q.enabled)
+      .reduce((sum, q) => sum + q.count, 0);
+    const questionTypeCounts = questionTypes
+      .filter(q => q.enabled && q.count > 0)
+      .reduce((acc: Record<string, number>, q) => {
+        acc[q.id] = q.count;
+        return acc;
+      }, {});
+    const formData = new FormData();
+    formData.append(
+      "question_type_counts",
+      JSON.stringify(questionTypeCounts)
     );
 
+    formData.append("course_ids", courseIds);
+    const force: any = (source == 'generate') ? false : true
+    formData.append("force", force);
 
-    toast({
-      title: "Assessment Generated!",
-      description: `${normalizedQuestions.length} questions created.`,
+    // 🔹 From this component
+    formData.append("assessment_type", assessmentType);
+    formData.append("difficulty", assessmentLevel);
+    formData.append("total_questions", totalQuestions.toString());
+
+    enabledQuestionTypes.forEach(type => {
+      formData.append("question_types", type);
     });
-  },
-  (error) => {
-    console.error("Generation failed:", error);
-    setIsGenerating(false);
-  }
-);
 
 
-    
+    formData.append("time_limit", timeLimit.toString());
+    formData.append("blooms_config", JSON.stringify(bloomValues));
 
-  } catch (error) {
-    console.error(error);
-    setIsGenerating(false);
-  }
-};
+    // 🔹 Dummy placeholders
+    formData.append("topic_names", JSON.stringify(topics));
+    formData.append("language", (language).toLowerCase());
+    // formData.append("additional_instructions", "Auto-generated");
+    // 🔹 Append transcript files
+    [...transcriptFiles, ...materialFiles].forEach(file => {
+      formData.append("files", file);
+    });
+
+    try {
+      const response = await fetch(`${BASE_URL}/ai-assment-generation/api/v2/generate`, {
+        method: "POST",
+        headers: {
+          "x-auth-token": ACCESS_TOKEN_2,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Generation failed");
+      }
+
+
+      const result = await response.json();
+      console.log("Generate response:", result);
+      setSpecificCourseId(result.job_id)
+      const formatQuestionType = (type?: string) => {
+        if (!type) return "";
+
+        const upper = type.toUpperCase();
+
+        if (upper === "TRUEFALSE") return "TRUE/FALSE";
+        if (upper === "MULTICHOICE") return "MULTI SELECT QUESTIONS";
+
+        return upper; // MCQ, MTF, FTB etc
+      };
+      const normalizeQuestions = (rawQuestions: any[]) => {
+        return rawQuestions.map((q: any, index: number) => {
+          const type = q.question_type?.toUpperCase(); // MCQ / FTB / MTF / TRUEFALSE / MULTICHOICE
+
+          const isMCQ = type === "MCQ";
+          const isMulti = type === "MULTICHOICE";
+          const isMTF = type === "MTF";
+
+          let correctAnswer: string | string[] = "";
+
+          // ✅ MCQ → single correct index (number or string)
+          if (isMCQ && q.correct_option_index !== undefined && q.correct_option_index !== null) {
+            const idx = Number(q.correct_option_index);
+            if (!isNaN(idx)) {
+              correctAnswer = String.fromCharCode(65 + idx);
+            }
+          }
+
+          // ✅ MULTICHOICE → array of correct indexes
+          if (isMulti && Array.isArray(q.correct_option_index)) {
+            correctAnswer = q.correct_option_index.map((i: any) =>
+              String.fromCharCode(65 + Number(i))
+            );
+          }
+
+          // ✅ FTB / TRUEFALSE → direct correct answer string
+          if (type === "FTB" || type === "TRUEFALSE") {
+            correctAnswer = q.correct_answer ?? "";
+          }
+
+          // ✅ MTF → show pairs as options (left → right)
+          let options: { label: string; text: string }[] = [];
+
+          if ((isMCQ || isMulti) && Array.isArray(q.options)) {
+            options = q.options.map((opt: any, i: number) => ({
+              label: String.fromCharCode(65 + i),
+              text: opt.text,
+            }));
+          }
+
+          if (isMTF && Array.isArray(q.pairs)) {
+            options = q.pairs.map((pair: any, i: number) => ({
+              label: String.fromCharCode(65 + i),
+              text: pair.left,      // LEFT side only
+              right: pair.right,    // store RIGHT separately
+            }));
+          }
+
+          return {
+            id: index + 1,
+
+            type: type,
+
+            bloomLevel: q.blooms_level
+              ? q.blooms_level.charAt(0).toUpperCase() + q.blooms_level.slice(1)
+              : "Remember",
+
+            bloomPercent: q.relevance_percentage ?? 0,
+
+            question: q.question_text || type == 'MTF' && 'Match the following',
+
+            options,
+
+            correctAnswer,
+
+            question_type_rationale: q.reasoning?.question_type_rationale ?? "—",
+
+            rationale: q.reasoning?.question_type_rationale ?? "—",
+          };
+        });
+      };
+
+
+
+      pollGenerationStatus(
+        result.job_id,
+        (completedData) => {
+          console.log("Generation completed:", completedData);
+
+          const assessmentData = JSON.parse(completedData.assessment_data);
+
+          const questionsByType = assessmentData.questions;
+
+          const rawQuestions = Object.values(questionsByType).flat();
+          console.log('rawQuestions', rawQuestions)
+          const normalizedQuestions = normalizeQuestions(rawQuestions);
+          console.log('normalizedQuestions', normalizedQuestions)
+          setQuestions(normalizedQuestions);
+
+          setCurrentStep("results");
+
+          setIsGenerating(false);
+          setIsGenerated(true);
+
+          setCompletedSteps((prev) =>
+            [...new Set([...prev, "configuration"])]
+          );
+
+
+          toast({
+            title: "Assessment Generated!",
+            description: `${normalizedQuestions.length} questions created.`,
+          });
+        },
+        (error) => {
+          console.error("Generation failed:", error);
+          setIsGenerating(false);
+        }
+      );
+
+
+
+
+    } catch (error) {
+      console.error(error);
+      setIsGenerating(false);
+    }
+  };
 
 
   const handleStartOver = () => {
@@ -353,13 +363,39 @@ pollGenerationStatus(
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-<GenerateLoaderDialog open={isGenerating} />
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <GenerateLoaderDialog open={isGenerating} />
+      <main className="container mx-auto lg:px-4 md:px-2 sm:px-1 py-6 max-w-4xl">
         {/* Title */}
         <div className="mb-5">
           <h1 className="text-2xl font-semibold text-foreground">iGOT AI Assessment Generator</h1>
           <p className="text-sm text-muted-foreground">Create curriculum-aligned assessments with iGOT AI</p>
+        </div>
+
+        <div className="flex items-center mb-3">
+          <h3 className="text-sm font-medium text-foreground">Assessment Type</h3>
+          <Tooltip
+            title="Choose the assessment type based on your evaluation needs — practice for revision, final for end-of-course, comprehensive for multi-course, standalone for independent, or competency for KCM-mapped assessments."
+            arrow
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "#fff",
+                  color: "#000",
+                  fontSize: "14px",
+                  padding: "8px 12px",
+                  boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                }
+              },
+              arrow: {
+                sx: {
+                  color: "#fff"
+                }
+              }
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3" data-state="closed"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          </Tooltip>
         </div>
 
         {/* Assessment Type Selector */}
@@ -430,7 +466,7 @@ pollGenerationStatus(
             onStartOver={handleStartOver}
             courseIds={courseIds}
             specificCourseId={specificCourseId}
-            questions={questions} 
+            questions={questions}
             setQuestions={setQuestions}
             isGenerating={isGenerating}
             onRegenerate={() => handleGenerate("regenerate")}
