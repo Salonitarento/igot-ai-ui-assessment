@@ -86,8 +86,10 @@ const Header = () => {
             </span>
           </div>
 
-          <div className="hidden md:block h-6 w-px bg-border/70 ml-2"></div>
+        </div>
 
+        {/* RIGHT SECTION */}
+        <div className="flex items-center gap-2">
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6 ml-2">
             {navItems.map((item) => (
@@ -117,10 +119,10 @@ const Header = () => {
               </NavLink>
             ))}
           </nav>
-        </div>
 
-        {/* RIGHT SECTION */}
-        <div className="flex items-center gap-2">
+          <div className="hidden md:block h-6 w-px bg-border/70 ml-2"></div>
+
+
           <button
             onClick={() => setOpenDrawer(true)}
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"

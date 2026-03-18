@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { ListChecks, ToggleLeft, MessageSquare, FileText } from "lucide-react";
 import { GenerateLoaderDialog } from "@/components/common/GenerateLoaderDialog";
 import Tooltip from "@mui/material/Tooltip";
+import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
 
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
@@ -110,7 +111,12 @@ const Index = () => {
     const poll = async () => {
       try {
         const response = await fetch(
-          `${BASE_URL}/ai-assment-generation/api/v1/status/${jobId}`
+          `${BASE_URL}/ai-assment-generation/api/v2/status/${jobId}`
+          , {
+            headers: {
+              "x-auth-token": ACCESS_TOKEN_2,
+            }
+          }
         );
 
         const result = await response.json();
@@ -183,8 +189,11 @@ const Index = () => {
     });
 
     try {
-      const response = await fetch(`${BASE_URL}/ai-assment-generation/api/v1/generate`, {
+      const response = await fetch(`${BASE_URL}/ai-assment-generation/api/v2/generate`, {
         method: "POST",
+        headers: {
+          "x-auth-token": ACCESS_TOKEN_2,
+        },
         body: formData,
       });
 
@@ -355,7 +364,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <GenerateLoaderDialog open={isGenerating} />
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <main className="container mx-auto lg:px-4 md:px-2 sm:px-1 py-6 max-w-4xl">
         {/* Title */}
         <div className="mb-5">
           <h1 className="text-2xl font-semibold text-foreground">iGOT AI Assessment Generator</h1>

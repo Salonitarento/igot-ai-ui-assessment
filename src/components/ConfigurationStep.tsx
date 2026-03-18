@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
-import { 
+import {
   Clock,
   Sparkles,
   ChevronLeft,
@@ -10,8 +10,11 @@ import {
   LucideIcon,
   ListChecks,
   Minus,
-  Plus
+  Plus,
+  ChevronDown
 } from "lucide-react";
+import { useState } from "react";
+import Tooltip from "@mui/material/Tooltip";
 
 export interface QuestionTypeConfig {
   id: string;
@@ -65,6 +68,11 @@ const ConfigurationStep = ({
   isGenerating,
   courseIds
 }: ConfigurationStepProps) => {
+
+  const [isBloomOpen, setIsBloomOpen] = useState(true);
+  const [timeError, setTimeError] = useState(false);
+
+
   const toggleQuestionType = (id: string) => {
     onQuestionTypesChange(
       questionTypes.map((qt) =>
@@ -189,13 +197,26 @@ const ConfigurationStep = ({
                 <Input
                   type="number"
                   min="5"
-                  max="180"
+                  max="90"
                   value={timeLimit}
-                  onChange={(e) => onTimeLimitChange(parseInt(e.target.value) || 30)}
-                  className="w-full h-10 text-center font-medium text-lg"
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+
+                    if (value > 90) {
+                      setTimeError(true);
+                    } else {
+                      setTimeError(false);
+                      onTimeLimitChange(value);
+                    }
+                  }}
+                  className={cn(
+                    "w-full h-10 text-center font-medium text-lg",
+                    timeError && "border-red-500 focus-visible:ring-red-500"
+                  )}
                 />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">minutes</span>
               </div>
+
               <div className="flex gap-1">
                 {[15, 30, 60].map((mins) => (
                   <Button
@@ -210,88 +231,166 @@ const ConfigurationStep = ({
                 ))}
               </div>
             </div>
+            {timeError && (
+              <p className="text-xs text-red-500 mt-1">
+                Max 90 minutes are allowed
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Bloom's Taxonomy - Card Grid */}
       <div className="card-elevated p-4">
-        <div className="flex items-center justify-between mb-4">
+        <div
+          className="flex items-center justify-between mb-4"
+        >
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-medium">Bloom's Taxonomy Distribution</h3>
+            <Tooltip
+              title="Distribute questions across cognitive levels. `Create` involves original production of work and cannot be reliably measured through objective question types available in this tool. Total must equal 100%."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+            </Tooltip>
           </div>
-          <div className={cn(
-            "px-3 py-1 rounded-full text-sm font-medium",
-            bloomTotal === 100 
-              ? "bg-accent/15 text-accent" 
-              : "bg-destructive/15 text-destructive"
-          )}>
-            {bloomTotal}% / 100%
+
+          <div className="flex items-center gap-4">
+            {isBloomOpen &&
+              (<div className={cn(
+                "px-3 py-1 rounded-full text-sm font-medium",
+                bloomTotal === 100
+                  ? "bg-accent/15 text-accent"
+                  : "bg-destructive/15 text-destructive"
+              )}>
+                {bloomTotal}% / 100%
+              </div>
+              )}
+            {/* Toggle Switch */}
+            <button
+              onClick={() => setIsBloomOpen(!isBloomOpen)}
+              className={cn(
+                "w-10 h-5 rounded-full transition-colors relative",
+                isBloomOpen ? "bg-primary" : "bg-muted-foreground/30"
+              )}
+            >
+              <div
+                className={cn(
+                  "w-4 h-4 bg-white rounded-full absolute top-[2px] transition-all shadow",
+                  isBloomOpen ? "left-[22px]" : "left-[2px]"
+                )}
+              />
+            </button>
           </div>
         </div>
 
         {/* Stacked Progress Bar */}
-        <div className="mb-4">
-          <div className="h-6 rounded-full overflow-hidden flex bg-muted/50">
-            {bloomLevels.map((level) => {
-              const value = bloomValues[level.id] || 0;
-              if (value === 0) return null;
-              return (
-                <div
-                  key={level.id}
-                  className={cn(
-                    "h-full flex items-center justify-center text-xs font-medium transition-all duration-300",
-                    level.color.split(' ')[0],
-                    level.color.split(' ')[2]
-                  )}
-                  style={{ width: `${value}%` }}
-                  title={`${level.name}: ${value}%`}
-                >
-                  {value >= 10 && <span>{value}%</span>}
-                </div>
-              );
-            })}
+        <div
+          className={cn(
+            "transition-all duration-500 ease-in-out overflow-hidden",
+            isBloomOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          )}>
+          <div className="mb-4">
+            <div className="h-6 rounded-full overflow-hidden flex bg-muted/50">
+              {bloomLevels.map((level) => {
+                const value = bloomValues[level.id] || 0;
+                if (value === 0) return null;
+                return (
+                  <div
+                    key={level.id}
+                    className={cn(
+                      "h-full flex items-center justify-center text-xs font-medium transition-all duration-300",
+                      level.color.split(' ')[0],
+                      level.color.split(' ')[2]
+                    )}
+                    style={{ width: `${value}%` }}
+                    title={`${level.name}: ${value}%`}
+                  >
+                    {value >= 10 && <span>{value}%</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-1.5 text-xs text-muted-foreground">
+              <span>Lower Order Thinking</span>
+              <span>Higher Order Thinking</span>
+            </div>
           </div>
-          <div className="flex justify-between mt-1.5 text-xs text-muted-foreground">
-            <span>Lower Order Thinking</span>
-            <span>Higher Order Thinking</span>
+
+
+          <div className="grid grid-cols-3 gap-3">
+            {bloomLevels.map((level) => (
+              <div
+                key={level.id}
+                className={cn(
+                  "rounded-xl border p-3 transition-all",
+                  level.color
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="font-medium text-sm">{level.name}</div>
+                    <div className="text-xs opacity-75">{level.description}</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => adjustBloomValue(level.id, -5)}
+                    className="w-7 h-7 rounded-md bg-white/60 hover:bg-white flex items-center justify-center transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="text-xl font-bold">{bloomValues[level.id] || 0}%</div>
+                  <button
+                    onClick={() => adjustBloomValue(level.id, 5)}
+                    className="w-7 h-7 rounded-md bg-white/60 hover:bg-white flex items-center justify-center transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {bloomLevels.map((level) => (
-            <div
-              key={level.id}
-              className={cn(
-                "rounded-xl border p-3 transition-all",
-                level.color
-              )}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="font-medium text-sm">{level.name}</div>
-                  <div className="text-xs opacity-75">{level.description}</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => adjustBloomValue(level.id, -5)}
-                  className="w-7 h-7 rounded-md bg-white/60 hover:bg-white flex items-center justify-center transition-colors"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <div className="text-xl font-bold">{bloomValues[level.id] || 0}%</div>
-                <button
-                  onClick={() => adjustBloomValue(level.id, 5)}
-                  className="w-7 h-7 rounded-md bg-white/60 hover:bg-white flex items-center justify-center transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {!isBloomOpen && (
+          <div className="text-sm text-muted-foreground text-center py-4">
+            Bloom's Taxonomy distribution is disabled. Questions will be generated without cognitive level targeting.
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
