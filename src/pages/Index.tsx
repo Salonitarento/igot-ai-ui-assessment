@@ -22,9 +22,9 @@ const defaultQuestionTypes = [
 
 const Index = () => {
   const [assessmentType, setAssessmentType] = useState("practice");
+  const [assessmentData, setAssessmentData] = useState<any>([]);
   const [currentStep, setCurrentStep] = useState("content");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  console.log(currentStep, 'currentStep')
   const [courseIds, setCourseIds] = useState<any>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
@@ -64,45 +64,7 @@ const Index = () => {
     setCompletedSteps((prev) => [...new Set([...prev, "content"])]);
     setCurrentStep("configuration");
   };
-  console.log('transcriptFiles', transcriptFiles, materialFiles)
-  // const handleGenerate = async () => {
-  //   const bloomTotal = Object.values(bloomValues).reduce((sum, v) => sum + v, 0);
-  //   const totalQuestions = questionTypes
-  //     .filter((qt) => qt.enabled)
-  //     .reduce((sum, qt) => sum + qt.count, 0);
 
-  //   if (bloomTotal !== 100) {
-  //     toast({
-  //       title: "Invalid Bloom's Distribution",
-  //       description: `Total must equal 100%. Currently: ${bloomTotal}%`,
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   if (totalQuestions === 0) {
-  //     toast({
-  //       title: "No Questions Configured",
-  //       description: "Please add at least one question type.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   setIsGenerating(true);
-  //   await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  //   setIsGenerated(true);
-  //   setCompletedSteps((prev) => [...new Set([...prev, "configuration"])]);
-  //   setCurrentStep("results");
-
-  //   toast({
-  //     title: "Assessment Generated!",
-  //     description: `${totalQuestions} questions created.`,
-  //   });
-
-  //   setIsGenerating(false);
-  // };
   const pollGenerationStatus = async (
     jobId: string,
     onComplete: (data: any) => void,
@@ -120,7 +82,6 @@ const Index = () => {
         );
 
         const result = await response.json();
-        console.log("Status response:", result);
 
         if (result.status === "COMPLETED") {
           onComplete(result);
@@ -146,7 +107,6 @@ const Index = () => {
     const enabledQuestionTypes = questionTypes
       .filter(q => q.enabled && q.count > 0)
       .map(q => q.id);
-    console.log('enabledQuestionTypes', questionTypes)
     const totalQuestions = questionTypes
       .filter(q => q.enabled)
       .reduce((sum, q) => sum + q.count, 0);
@@ -203,7 +163,6 @@ const Index = () => {
 
 
       const result = await response.json();
-      console.log("Generate response:", result);
       setSpecificCourseId(result.job_id)
       const formatQuestionType = (type?: string) => {
         if (!type) return "";
@@ -289,30 +248,30 @@ const Index = () => {
 
 
 
+     
       pollGenerationStatus(
+        
         result.job_id,
         (completedData) => {
-          console.log("Generation completed:", completedData);
 
-          const assessmentData = JSON.parse(completedData.assessment_data);
+          // FIX: Only parse if it's a string
+          const assessmentDataFetch =
+            typeof completedData.assessment_data === "string"
+              ? JSON.parse(completedData.assessment_data)
+              : completedData.assessment_data;
 
-          const questionsByType = assessmentData.questions;
+              setAssessmentData(assessmentDataFetch);
 
+          const questionsByType = assessmentDataFetch.questions;
           const rawQuestions = Object.values(questionsByType).flat();
-          console.log('rawQuestions', rawQuestions)
           const normalizedQuestions = normalizeQuestions(rawQuestions);
-          console.log('normalizedQuestions', normalizedQuestions)
           setQuestions(normalizedQuestions);
-
           setCurrentStep("results");
-
           setIsGenerating(false);
           setIsGenerated(true);
-
           setCompletedSteps((prev) =>
             [...new Set([...prev, "configuration"])]
           );
-
 
           toast({
             title: "Assessment Generated!",
@@ -324,6 +283,7 @@ const Index = () => {
           setIsGenerating(false);
         }
       );
+     
 
 
 
@@ -470,6 +430,7 @@ const Index = () => {
             setQuestions={setQuestions}
             isGenerating={isGenerating}
             onRegenerate={() => handleGenerate("regenerate")}
+            assessmentData={assessmentData}
           />
         )}
       </main>
