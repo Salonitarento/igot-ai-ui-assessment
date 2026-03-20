@@ -57,6 +57,7 @@ interface ResultsStepProps {
   setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
   onRegenerate: () => void;
   isGenerating: any
+  assessmentData: any
 }
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -175,7 +176,8 @@ const ResultsStep = ({
   questions,
   setQuestions,
   isGenerating,
-  onRegenerate
+  onRegenerate,
+  assessmentData
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -224,17 +226,13 @@ const ResultsStep = ({
     setEditForm({ ...editForm, options: newOptions });
   };
 
-  // const handleExport = () => {
-  //   const format = exportFormats.find(f => f.id === selectedFormat);
-  //   console.log(format,'format')
-  //   toast({
-  //     title: `Exporting as ${format?.name}`,
-  //     description: `Your assessment will be downloaded as a ${format?.name} file.`,
-  //   });
-  // };
+
+
+
+
+
   const handleExport = async () => {
     try {
-      // const assessmentId = "do_11447034411220992011179";
 
       let url = "";
       let fileName = "";
@@ -316,8 +314,6 @@ const ResultsStep = ({
       </div>
     );
   }
-
-  console.log(questions, '=============questions')
 
   return (
     <div className="space-y-4 stagger-children">
@@ -405,6 +401,49 @@ const ResultsStep = ({
 
         <div className="divide-y divide-border">
           {questions?.map((q) => {
+            const typeMap: Record<string, string> = {
+              "MCQ": "Multiple Choice Question",
+              "FTB": "FTB Question",
+              "MTF": "MTF Question",
+              "MULTICHOICE": "Multi-Choice Question",
+              "TRUEFALSE": "True/False Question"
+            };
+            const rawType = typeMap[q.type] || Object.keys(assessmentData?.questions || {}).find(k => k.toUpperCase().includes(q.type));
+            const rawList = assessmentData?.questions?.[rawType] || [];
+            const raw = rawList.find((item: any) =>
+              (item.question_text && item.question_text === q.question) ||
+              (item.matching_context && item.matching_context === q.question)
+            ) || rawList[q.id - 1]; // fallback by index
+
+            // Extract details for use in your UI
+            const questionText = raw?.question_text || raw?.matching_context || "";
+            let correctAnswerText = "";
+            if (q.type === "MCQ" && raw?.correct_option_index !== undefined) {
+              correctAnswerText = raw.options?.[raw.correct_option_index]?.text || "";
+            } else if (q.type === "FTB") {
+              correctAnswerText = raw?.correct_answer;
+            } else if (q.type === "MTF") {
+              correctAnswerText = raw?.pairs?.map((p: any) => `${p.left} → ${p.right}`).join(", ");
+            } else if (q.type === "MULTICHOICE" && Array.isArray(raw?.correct_option_index)) {
+              correctAnswerText = (raw.correct_option_index || [])
+                .map((idx: number) => raw.options?.[idx]?.text)
+                .filter(Boolean)
+                .join(", ");
+            } else if (q.type === "TRUEFALSE") {
+              correctAnswerText = raw?.correct_answer;
+            }
+            const rationale = raw?.answer_rationale?.correct_answer_explanation;
+            const whyFactor = raw?.answer_rationale?.why_factor;
+            const logicJustification = raw?.answer_rationale?.logic_justification;
+            const bloomsLevel = raw?.blooms_level;
+            const bloomsJustification = raw?.reasoning?.blooms_level_justification;
+            const learningObjective = raw?.reasoning?.learning_objective_alignment;
+            const courseName = raw?.course_name;
+            const kcm = raw?.reasoning?.competency_alignment?.kcm || {};
+            const kcmArea = kcm.competency_area;
+            const kcmTheme = kcm.competency_theme;
+            const kcmSubTheme = kcm.competency_sub_theme;
+            // ...existing code...
             const colors = bloomColors[q.bloomLevel] ?? bloomColors["Remember"];
             const isExpanded = expandedQuestions.includes(q.id);
             const isEditing = editingQuestionId === q.id;
@@ -415,7 +454,7 @@ const ResultsStep = ({
                 {/* Question Header */}
                 <div
                   className={cn(
-                    "w-full flex items-start gap-4 p-4 text-left transition-colors",
+                    "w-full flex items-left gap-4 p-4 text-left transition-colors",
                     isExpanded ? colors.light : "hover:bg-muted/30"
                   )}
                 >
@@ -428,6 +467,7 @@ const ResultsStep = ({
                   >
                     {q.id}
                   </button>
+                  <div className="flex justify-between items-center w-full">
                   <div className="flex flex-col">
                     <div className="flex-1 min-w-0" onClick={() => !isEditing && toggleQuestion(q.id)}>
                       <div className="flex items-center gap-2 mb-1">
@@ -457,9 +497,8 @@ const ResultsStep = ({
                         )}>{q.question}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap"><span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-target w-3 h-3"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Understand database indexing fundamentals</span><span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-graduation-cap w-3 h-3"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path><path d="M22 10v6"></path><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path></svg> Data Management</span><span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-book-open w-3 h-3"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg> Database Management Systems</span></div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-right gap-2 shrink-0 ">
                     {isEditing ? (
                       <>
                         <button
@@ -491,6 +530,7 @@ const ResultsStep = ({
                         <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       )}
                     </button>
+                  </div>
                   </div>
                 </div>
 
@@ -653,6 +693,74 @@ const ResultsStep = ({
                           </div>
                         </div>
                       </div> */}
+
+
+                      {/* justification section */}
+                      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+                        <div className="px-4 py-2.5 bg-muted/40 border-b border-border">
+                          <div className="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-shield-check w-4 h-4 text-primary">
+                              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
+                              <path d="m9 12 2 2 4-4"></path></svg>
+                            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Justification</span>
+                          </div>
+                        </div>
+                        <div className="px-6 py-5 space-y-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-circle-check-big w-4 h-4 text-accent"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+                            <span className="text-sm font-semibold text-foreground">
+                              Correct Answer:{" "}
+                              <span className="font-bold">
+                                {correctAnswerText}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <div className="w-7 h-7 rounded-md bg-amber-100 flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-lightbulb w-3.5 h-3.5 text-amber-600"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg></div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">Rationale</div>
+                              <div className="text-sm text-foreground break-words max-w-full">{rationale}</div>
+                            </div>
+                          </div>
+                          <hr className="my-4 border-border" />
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/40">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-chart-column w-4 h-4 text-muted-foreground"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Bloom Level</div>
+                                <div className="text-sm font-medium">
+                                  <span className={cn("text-xs font-medium break-words max-w-full", colors.text)}>{bloomsLevel}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 w-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-target h-4 text-muted-foreground w-[12%]"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Learning Outcome</div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-medium break-all whitespace-pre-wrap leading-relaxed">
+                                    {learningObjective}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/40">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-graduation-cap w-3.5 h-3.5 text-muted-foreground shrink-0"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path><path d="M22 10v6"></path><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path></svg>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Competency (KCM)</div>
+                                <div className="text-xs font-medium  break-words max-w-full">{kcmTheme}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/40">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-book-open w-3.5 h-3.5 text-muted-foreground shrink-0"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Course</div>
+                                <div className="text-xs font-medium break-words max-w-full">{courseName}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -693,7 +801,7 @@ const ResultsStep = ({
               {item.status === "ok" ? (
                 <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-accent/15 text-accent"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-circle-check-big w-3.5 h-3.5"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg></div>
               ) : (
-               <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-amber-100 text-amber-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-clock w-3.5 h-3.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-amber-100 text-amber-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-clock w-3.5 h-3.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
               )}
               <span
                 className={cn(

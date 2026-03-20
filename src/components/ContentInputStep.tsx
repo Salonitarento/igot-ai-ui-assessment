@@ -225,14 +225,8 @@ const ContentInputStep = ({
         }
       );
 
-
-      console.log(response, '======= response')
-
       if (!response.ok) throw new Error("Failed to fetch courses");
-
       const data = await response.json();
-
-      console.log(data, '======= data APi v1')
       const newCourses: CourseOption[] =
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
@@ -347,7 +341,6 @@ const ContentInputStep = ({
         }
       );
 
-      console.log(response, "====== response")
 
       if (!response.ok) throw new Error("Failed to fetch learning outcomes");
 
@@ -355,11 +348,7 @@ const ContentInputStep = ({
 
       const htmlInstructions = data?.result?.content?.instructions || "";
 
-      console.log(htmlInstructions, "==== HTML from API");
-
       const outcomes = parseLearningOutcomes(htmlInstructions);
-
-      console.log(outcomes, "==== parsed outcomes");
 
       setLearningOutcomes(outcomes);
 
@@ -423,9 +412,6 @@ const ContentInputStep = ({
     }));
   };
 
-  useEffect(() => {
-    console.log(learningOutcomes, "======== learningOutcomes");
-  }, [learningOutcomes]);
 
   return (
     <div className="space-y-4 stagger-children">
