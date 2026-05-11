@@ -24,9 +24,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+if (!user) {
+  return <>{children}</>; 
+}
 
   return <>{children}</>;
 };
@@ -44,14 +44,7 @@ const App = () => (
             {/* Layout with Header */}
             <Route element={<MainLayout />}>
 
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                }
-              />
+           <Route path="/" element={<Index />} />
 
               <Route
                 path="/past-assessments"
