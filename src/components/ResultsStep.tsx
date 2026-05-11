@@ -26,6 +26,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { ACCESS_TOKEN_2 } from "./ConstantAPI";
 
 interface QuestionOption {
   label: string;
@@ -264,11 +265,13 @@ const ResultsStep = ({
       }
 
       if (!url) return;
+      const token = ACCESS_TOKEN_2;
 
       const response = await fetch(url, {
         method: "GET",
         headers: {
           accept: mimeType,
+          "x-auth-token": token,
         },
       });
 
