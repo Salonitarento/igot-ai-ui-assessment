@@ -23,7 +23,6 @@ const Header = () => {
            method: 'GET',
            headers: {
              'Content-Type': 'application/json',
-             'x-auth-token': ACCESS_TOKEN_2,
            },
          }
        );  

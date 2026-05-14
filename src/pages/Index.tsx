@@ -148,9 +148,6 @@ const Index = () => {
         const response = await fetch(
           `/ai-assment-generation/api/v2/status/${jobId}`
           , {
-            headers: {
-              "x-auth-token": ACCESS_TOKEN_2,
-            }
           }
         );
 
@@ -224,9 +221,6 @@ const Index = () => {
     try {
       const response = await fetch(`/api/ai/assessments/v1/generate`, {
         method: "POST",
-        headers: {
-          "x-auth-token": `${ACCESS_TOKEN_2}`,
-        },
         body: formData,
       });
 

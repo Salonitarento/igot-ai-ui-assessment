@@ -48,11 +48,7 @@ const handleView = (jobId : string) => {
       try {
         const response = await fetch(
           `/apis/proxies/v8/ai/assessments/v1/status/${jobId}`
-          , {
-            headers: {
-              "x-auth-token": ACCESS_TOKEN_2,
-            }
-          }
+          ,
         );
 
         const result = await response.json();
@@ -168,7 +164,6 @@ const handleView = (jobId : string) => {
       const response = await fetch(url, {
         method: "GET",
         headers: {
-          // "x-auth-token": ACCESS_TOKEN_2,
           "Content-Type": "application/json"
         }
       });

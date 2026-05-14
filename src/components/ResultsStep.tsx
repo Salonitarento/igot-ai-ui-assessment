@@ -271,7 +271,6 @@ const ResultsStep = ({
         method: "GET",
         headers: {
           accept: mimeType,
-          "x-auth-token": token,
         },
       });
 
