@@ -146,7 +146,7 @@ const Index = () => {
     const poll = async () => {
       try {
         const response = await fetch(
-          `/ai-assment-generation/api/v2/status/${jobId}`
+          `/apis/proxies/v8/ai/assessments/v1/status/${jobId}`
           , {
           }
         );
@@ -201,9 +201,9 @@ const Index = () => {
     formData.append("difficulty", assessmentLevel);
     formData.append("total_questions", totalQuestions.toString());
 
-    enabledQuestionTypes.forEach(type => {
-      formData.append("question_types", type);
-    });
+    // enabledQuestionTypes.forEach(type => {
+    //   formData.append("question_types", type);
+    // });
 
 
     formData.append("time_limit", timeLimit.toString());
@@ -219,7 +219,7 @@ const Index = () => {
     });
 
     try {
-      const response = await fetch(`/api/ai/assessments/v1/generate`, {
+      const response = await fetch(`/apis/proxies/v8/ai/assessments/v1/generate`, {
         method: "POST",
         body: formData,
       });
