@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import PastAssessmentsPage from "./pages/PastAssessmentsPage";
 import MainLayout from "./components/Layout/MainLayout";
+import { useEffect, useState } from "react";
 
 
 const queryClient = new QueryClient();
@@ -31,39 +32,82 @@ if (!user) {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <HashRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+const App = () => {
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(null);
+  useEffect(() => {
+    fetchUserDetails();
+  }, []);
+  const fetchUserDetails = async () => {
+    try {
+      const response = await fetch(
+        "/apis/proxies/v8/api/user/v2/read",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-            {/* Layout with Header */}
-            <Route element={<MainLayout />}>
+      if (!response.ok) {
+        throw new Error("Failed to fetch user details");
+      }
 
-           <Route path="/" element={<Index />} />
+      const data = await response.json();
+      const responseUserDetails = data?.result?.response;
 
-              <Route
-                path="/past-assessments"
-                element={
-                  <ProtectedRoute>
-                    <PastAssessmentsPage />
-                  </ProtectedRoute>
-                }
-              />
+      // Check authorization
+      const hasAccess = responseUserDetails?.roles?.includes(
+        "AI_ASSESSMENT_CREATOR"
+      );
+      if (!hasAccess) {
+        setIsAuthorized(false);
+        return null;
+      }
 
-            </Route>
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </HashRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      setIsAuthorized(true);
+      setUserDetails(responseUserDetails);
 
+      return data?.result || null;
+    } catch (error) {
+      console.error("User details fetch error:", error);
+      setIsAuthorized(false);
+      return null;
+    }
+  };
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <HashRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+
+              {/* Layout with Header */}
+              <Route element={<MainLayout userDetails={userDetails} isAuthorized={isAuthorized} />}>
+                <Route path="/" element={<Index />} />
+
+                <Route
+                  path="/past-assessments"
+                  element={
+                    <ProtectedRoute>
+                      <PastAssessmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+              </Route>
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </HashRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 export default App;

@@ -6,37 +6,10 @@ import { useEffect, useState } from "react";
 import HelpDrawer from "@/components/HelpDrawer";
 import { ACCESS_TOKEN_2 } from "./ConstantAPI";
 
-const Header = () => {
+const Header = ({ userDetails }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [openDrawer, setOpenDrawer] = useState(false);
-  const [userDetails , setUserDetails] = useState<any>(null);
-
-    useEffect(() => {
-      fetchUserDetails();
-    }, []);
-   const fetchUserDetails = async () => {
-     try {
-       const response = await fetch(
-         '/apis/proxies/v8/api/user/v2/read',
-         {
-           method: 'GET',
-           headers: {
-             'Content-Type': 'application/json',
-           },
-         }
-       );  
- 
-       if (!response.ok) throw new Error('Failed to fetch user details');
-       const data = await response.json();
-       const userDetails = data?.result?.response;
-       setUserDetails(userDetails);
-       return data?.result || null;
-     } catch (error) {
-       console.error('User details fetch error:', error);
-       return null;
-     }
-   };
  const handleLogout = async () => {
    const resetUrl = `/apis/reset`;
     window.location.href = resetUrl;
