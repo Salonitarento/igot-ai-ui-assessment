@@ -76,15 +76,16 @@ const handleView = (jobId : string) => {
     return assessmentList
       .filter((item: any) => item.status === "COMPLETED")
       .map((item: any, idx: number) => {
+        console.log('item', item)
         const config = item.config || {};
         const createdAt = item.created_at ? new Date(item.created_at) : null;
         return {
           id: item.job_id,
-          code: `ASM-${item.job_id.split("_")[0].slice(-8).toUpperCase()}-${item.job_id.split("_")[1]?.slice(0, 4)?.toUpperCase() || "XXXX"}`,
+          code: `${item.status}ASM-${item.job_id.split("_")[0].slice(-8).toUpperCase()}-${item.job_id.split("_")[1]?.slice(0, 4)?.toUpperCase() || "XXXX"}`,
           type: config.assessment_type
             ? config.assessment_type.charAt(0).toUpperCase() + config.assessment_type.slice(1)
             : "—",
-          course: "CS401", // You can update this if you have course info in API
+          course: item.course_names[0], // You can update this if you have course info in API
           date: createdAt
             ? createdAt.toLocaleDateString("en-GB", {
               day: "2-digit",
@@ -366,13 +367,13 @@ const handleView = (jobId : string) => {
 
       {/* Table Header */}
       <div className="grid grid-cols-12 gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">
-        <div className="col-span-3">ASSESSMENT</div>
+        <div className="col-span-2">ASSESSMENT</div>
         <div className="col-span-2">COURSE</div>
         <div className="col-span-2">DATE & TIME</div>
         <div className="col-span-1 text-center">LANG</div>
         <div className="col-span-1 text-center">QS</div>
         <div className="col-span-1 text-center">LEVEL</div>
-        <div className="col-span-2 text-right">ACTION</div>
+        <div className="col-span-2 text-center">ACTION</div>
       </div>
 
       {/* List */}
@@ -385,14 +386,14 @@ const handleView = (jobId : string) => {
           >
             <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-sky-500"></div>
             {/* Assessment */}
-            <div className="col-span-3 pl-2">
+            <div className="col-span-2 pl-2">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold bg-primary/10 text-primary border border-primary/20">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-semibold bg-muted text-muted-foreground">
                   {index + 1}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground font-mono truncate"> {a.code}</p>
-                  <Badge variant="secondary">
+                  {/* <p className="text-sm font-semibold text-foreground font-mono truncate"> {a.code}</p> */}
+                  <Badge variant="secondary" className="inline-flex items-center rounded-full font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-xs capitalize px-2.5 py-0.5 bg-sky-500 text-white border-0">
                     {a.type}
                   </Badge>
                 </div>
@@ -443,7 +444,7 @@ const handleView = (jobId : string) => {
 
             {/* Action */}
             <div onClick={() => handleView(a.id)} className="col-span-2 flex justify-end">
-              <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 gap-1.5 text-primary opacity-70 group-hover:opacity-100 transition-opacity">
+              <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/90 hover:text-accent-foreground h-9 rounded-md px-3 gap-1.5 text-primary opacity-70 group-hover:opacity-100 transition-opacity">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-eye w-4 h-4">
                   <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
                   <circle cx="12" cy="12" r="3"></circle>

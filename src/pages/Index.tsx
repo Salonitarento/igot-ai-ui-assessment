@@ -78,6 +78,7 @@ const Index = () => {
   const [currentStep, setCurrentStep] = useState("content");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [courseIds, setCourseIds] = useState<any>([]);
+  const [courseNames, setCourseNames] = useState<string[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [transcriptFiles, setTranscriptFiles] = useState<File[]>([]);
@@ -193,6 +194,7 @@ const Index = () => {
     );
 
     formData.append("course_ids", courseIds);
+    formData.append("course_names", courseNames.join(","));
     const force: any = (source == 'generate') ? false : true
     formData.append("force", force);
 
@@ -377,6 +379,7 @@ const Index = () => {
             transcriptFiles={transcriptFiles}
             materialFiles={materialFiles}
             onCourseIdsChange={setCourseIds}
+            onCourseNamesChange={setCourseNames}
             onTopicsChange={setTopics}
             onNotesChange={setNotes}
             onTranscriptFilesChange={setTranscriptFiles}
@@ -419,6 +422,7 @@ const Index = () => {
             isGenerating={isGenerating}
             onRegenerate={() => handleGenerate("regenerate")}
             assessmentData={assessmentData}
+            viewJobData={location.state?.viewJobData}
           />
         )}
       </main>

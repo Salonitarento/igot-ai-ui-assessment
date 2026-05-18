@@ -31,6 +31,7 @@ interface ContentInputStepProps {
   language: string;
   setLanguage: (language: string) => void;
   onCourseIdsChange: (ids: string[]) => void;
+  onCourseNamesChange: (names: string[]) => void;
   onTopicsChange: (topics: string[]) => void;
   onNotesChange: (notes: string) => void;
   onTranscriptFilesChange: (files: File[]) => void;
@@ -53,6 +54,7 @@ const ContentInputStep = ({
   language,
   setLanguage,
   onCourseIdsChange,
+  onCourseNamesChange,
   onTopicsChange,
   onNotesChange,
   onTranscriptFilesChange,
@@ -95,23 +97,31 @@ const ContentInputStep = ({
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
+      onCourseNamesChange(getNames([value]));
       setCourseSearchOpen(false);
       fetchLearningOutcomes(value);
     } else {
       const filtered = courseIds.filter(id => id !== "NA");
       if (filtered.includes(value)) {
+        const newIds = filtered.filter(id => id !== value);
         onCourseIdsChange(filtered.filter(id => id !== value));
+        onCourseNamesChange(getNames(newIds));
       } else {
+        const newIds = [...filtered, value];
         onCourseIdsChange([...filtered, value]);
+        onCourseNamesChange(getNames(newIds));
       }
     }
   };
 
   const removeCourseId = (id: string) => {
+    const newIds = courseIds.filter((c) => c !== id);
     onCourseIdsChange(courseIds.filter((c) => c !== id));
+    onCourseNamesChange(getNames(newIds));
   };
 
-
+  const getNames = (ids: string[]) =>
+    ids.map(id => availableCourseIds?.find(c => c.value === id)?.label || id);
   const addTopic = () => {
     if (newTopic.trim() && !topics.includes(newTopic.trim())) {
       onTopicsChange([...topics, newTopic.trim()]);
