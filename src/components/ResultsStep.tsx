@@ -58,7 +58,8 @@ interface ResultsStepProps {
   setQuestions: React.Dispatch<React.SetStateAction<Question[]>>;
   onRegenerate: () => void;
   isGenerating: any
-  assessmentData: any
+  assessmentData: any,
+  viewJobData: any
 }
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -178,7 +179,8 @@ const ResultsStep = ({
   setQuestions,
   isGenerating,
   onRegenerate,
-  assessmentData
+  assessmentData,
+  viewJobData
 }: ResultsStepProps) => {
   const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [selectedFormat, setSelectedFormat] = useState("pdf");
@@ -238,28 +240,35 @@ const ResultsStep = ({
       let url = "";
       let fileName = "";
       let mimeType = "";
-
       if (selectedFormat === "json") {
-        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId || courseIds}?format=json`;
+        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+          (courseIds?.length ? courseIds : viewJobData?.course_id)
+          }?format=json`;
         fileName = "assessment.json";
         mimeType = "application/json";
       }
 
       if (selectedFormat === "pdf") {
         // example – update when PDF API is ready
-        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId || courseIds}?format=pdf`;
+        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+          (courseIds?.length ? courseIds : viewJobData?.course_id)
+          }?format=pdf`;
         fileName = "assessment.pdf";
         mimeType = "application/pdf";
       }
       if (selectedFormat === "csv") {
         // example – update when CSV API is ready
-        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId || courseIds}?format=csv`;
+        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+          (courseIds?.length ? courseIds : viewJobData?.course_id)
+          }?format=csv`;
         fileName = "assessment.csv";
         mimeType = "application/csv";
       }
       if (selectedFormat === "word") {
         // example – update when Word API is ready
-        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId || courseIds}?format=docx`;
+        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+          (courseIds?.length ? courseIds : viewJobData?.course_id)
+          }?format=docx`;
         fileName = "assessment.docx";
         mimeType = "application/docx";
       }
@@ -332,7 +341,7 @@ const ResultsStep = ({
               <p className="text-sm text-muted-foreground">Your {totalQuestions}-question assessment is ready for review and export.</p>
             </div>
           </div>
-          <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 shrink-0 gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-rotate-ccw w-4 h-4"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Regenerate</button>
+          <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-primary/90 hover:text-accent-foreground h-9 rounded-md px-3 shrink-0 gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-rotate-ccw w-4 h-4"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Regenerate</button>
         </div>
       </div>
 
@@ -470,69 +479,69 @@ const ResultsStep = ({
                     {q.id}
                   </button>
                   <div className="flex justify-between items-center w-full">
-                  <div className="flex flex-col">
-                    <div className="flex-1 min-w-0" onClick={() => !isEditing && toggleQuestion(q.id)}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs font-normal">
-                          {q.type === "TRUEFALSE"
-                            ? "TRUE/FALSE"
-                            : q.type === "MULTICHOICE"
-                              ? "MULTI SELECT QUESTION"
-                              : q.type}
-                        </Badge>
+                    <div className="flex flex-col">
+                      <div className="flex-1 min-w-0" onClick={() => !isEditing && toggleQuestion(q.id)}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {q.type === "TRUEFALSE"
+                              ? "TRUE/FALSE"
+                              : q.type === "MULTICHOICE"
+                                ? "MULTI SELECT QUESTION"
+                                : q.type}
+                          </Badge>
 
-                        <Badge className={cn("text-xs", colors.light, colors.text, colors.border, "border")}>
-                          {q.bloomLevel} • {q.bloomPercent}%
-                        </Badge>
+                          <Badge className={cn("text-xs", colors.light, colors.text, colors.border, "border")}>
+                            {q.bloomLevel} • {q.bloomPercent}%
+                          </Badge>
+                        </div>
+                        {isEditing ? (
+                          <Textarea
+                            value={editForm?.question || ""}
+                            onChange={(e) => updateEditForm("question", e.target.value)}
+                            className="text-sm bg-white border-primary/30 focus:border-primary min-h-[60px]"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <p className={cn(
+                            "text-sm text-foreground cursor-pointer",
+                            !isExpanded && "line-clamp-1"
+                          )}>{q.question}</p>
+                        )}
                       </div>
-                      {isEditing ? (
-                        <Textarea
-                          value={editForm?.question || ""}
-                          onChange={(e) => updateEditForm("question", e.target.value)}
-                          className="text-sm bg-white border-primary/30 focus:border-primary min-h-[60px]"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <p className={cn(
-                          "text-sm text-foreground cursor-pointer",
-                          !isExpanded && "line-clamp-1"
-                        )}>{q.question}</p>
-                      )}
                     </div>
-                  </div>
-                  <div className="flex items-right gap-2 shrink-0 ">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={saveEditing}
-                          className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent/90 transition-colors"
-                        >
-                          <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                    <button
-                      onClick={() => toggleQuestion(q.id)}
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                        isExpanded ? colors?.bg + " text-white" : "bg-muted"
-                      )}
-                    >
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4" />
+                    <div className="flex items-right gap-2 shrink-0 ">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={saveEditing}
+                            className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        <></>
                       )}
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => toggleQuestion(q.id)}
+                        className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                          isExpanded ? colors?.bg + " text-white" : "bg-muted"
+                        )}
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -603,7 +612,7 @@ const ResultsStep = ({
                                       "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors cursor-pointer",
                                       isCorrect
                                         ? "bg-accent text-white"
-                                        : "bg-muted text-muted-foreground hover:bg-accent/50 hover:text-white"
+                                        : "bg-muted text-muted-foreground hover:bg-primary/90 hover:text-white"
                                     )}
                                     title="Click to set as correct answer"
                                   >
