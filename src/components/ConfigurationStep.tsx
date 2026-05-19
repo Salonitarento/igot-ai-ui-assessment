@@ -91,7 +91,15 @@ const ConfigurationStep = ({
 
   const adjustBloomValue = (id: string, delta: number) => {
     const currentValue = bloomValues[id] || 0;
-    const newValue = Math.max(0, Math.min(100, currentValue + delta));
+
+    const otherTotal = Object.entries(bloomValues)
+      .filter(([key]) => key !== id)
+      .reduce((sum, [, value]) => sum + value, 0);
+    const maxAllowed = 100 - otherTotal;
+    const newValue = Math.max(
+      0,
+      Math.min(maxAllowed, currentValue + delta)
+    );
     onBloomChange(id, newValue);
   };
 
@@ -111,6 +119,44 @@ const ConfigurationStep = ({
             <div className="flex items-center gap-2">
               <ListChecks className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-medium">Question Types</h3>
+               <Tooltip
+              title="Multiple Choice: Select one correct answer. Multiple Select: Select all correct answers. Configure the types and count of questions to generate."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+            </Tooltip>
             </div>
             <Badge variant="secondary" className="text-xs">{totalQuestions} total</Badge>
           </div>

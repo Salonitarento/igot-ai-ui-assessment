@@ -64,13 +64,26 @@ interface ResultsStepProps {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const checklist = [
-  { label: "Bloom's taxonomy distribution validated", status: "ok" },
-  { label: "Competency mapping verified", status: "ok" },
-  { label: "Distractors are plausible and non-trivial", status: "ok" },
-  { label: "Learning outcomes aligned to questions", status: "ok" },
-  { label: "No duplicate or near-duplicate questions", status: "ok" },
-  { label: "Rationale provided for all correct answers", status: "ok" },
-  { label: "Language complexity matches assessment level", status: "warn" },
+  { label: "Assessment Items assess the LO they are tagged to", status: "ok" },
+  { label: "Assessment covers all LOs comprehensively.", status: "ok" },
+  { label: "Assessment Items contains stem all the information needed to answer the question, i.e. the test-taker is able to answer the question based on the stem alone", status: "ok" },
+  { label: "The Assessment Item's statements avoid double negatives (e.g., Which of the following is NOT incorrect?)", status: "ok" },
+  { label: "The Assessment Items consistent terms for related concepts are used, avoiding variations that may confuse the test-taker.", status: "ok" },
+  { label: "The Assessment Items have extreme options like ‘all’, ‘always’, ‘never’ are avoided. ‘All of the above’ is used only when necessary", status: "ok" },
+  { label: "Assessment Items avoid vague options containing ‘usually,’ ‘typically,’ and ‘maybe.’ ‘None of the above’ is used in a limited way.", status: "ok" },
+  { label: "None of the distractors in Assessment Items mean the same thing as the correct answer key(s). All options are mutually exclusive.", status: "ok" },
+  { label: "No more than two blanks are included within the sentence in any Assessment Item.", status: "ok" },
+  { label: "Assessment Items based on case studies include a clearly defined problem or challenge.", status: "ok" },
+  { label: "The length of the case study in Assessment Items is appropriate to its level of complexity of action verbs in Bloom's taxanomy", status: "ok" },
+  { label: "The number of options in Assessment Items is between 2 to 5.", status: "ok" },
+  { label: "All Assessment Items and options are grammatically correct, with proper sentence structure and punctuation.", status: "ok" },
+  { label: "Assessment Items and options are free from stereotypes, biases, and content that may offend any group.", status: "ok" },
+  { label: "Cultural and gender-inclusive language is used in all Assessment Items.", status: "ok" },
+  { label: "The time allocated per Assessment Item is appropriate for its difficulty level.", status: "ok" },
+  { label: "The total assessment time is reasonable based on the number and complexity of Assessment Items.", status: "ok" },
+  { label: "A clear answer key is available for Assessment Items, with explanations and justification for distractors.", status: "ok" },
+  { label: "The test administration process for Assessment Items is well-defined.", status: "ok" },
+  { label: "Passing criteria are clearly stated for the overall Assessment.", status: "ok" },
 ];
 
 // Sample generated questions data
@@ -798,7 +811,7 @@ const ResultsStep = ({
       </div>
 
       {/* AI Quality Checklist */}
-      <div className="card-elevated">
+      {/* <div className="card-elevated">
         <div className="p-4 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-shield-check w-4 h-4 text-accent"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
             <h4 className="font-medium text-foreground">AI Quality Checklist</h4></div>
@@ -825,7 +838,7 @@ const ResultsStep = ({
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Export Options */}
       <div className="card-elevated p-4">
