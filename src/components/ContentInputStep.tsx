@@ -202,33 +202,43 @@ const ContentInputStep = ({
     }
   }, [courseQuery]);
 
-  const fetchCourses = async (reset = false) => {
-    // if (!user?.access_token || isCoursesLoading || (!hasMoreCourses && !reset)) return;
-    if (isCoursesLoading || (!hasMoreCourses && !reset)) return;
+ const fetchCourses = async (reset = false) => {
+  if (isCoursesLoading || (!hasMoreCourses && !reset)) return;
 
-    try {
-      setIsCoursesLoading(true);
+  try {
+    setIsCoursesLoading(true);
 
-      const response = await fetch(
-        "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${user.access_token}`,
-          },
-          body: JSON.stringify({
-            request: {
-              filters: {
-                primaryCategory: ["Course"],
-                status: ["Live"],
-                courseCategory: ["Course"],
-              },
-              fields: ["name", 'language'],
-              sort_by: { createdOn: "desc" },
+    const response = await fetch(
+      "/apis/proxies/v8/sunbirdigot/v4/search",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          request: {
+            filters: {
+              contentType: ["Course"],
+              status: ["Live"],
+            },
+            fields: [
+              "identifier",
+              "name",
+              "language",
+              "contentType",
+              "courseCategory",
+              "createdOn",
+            ],
+            facets: [
+              "avgRating",
+              "language",
+              "organisation",
+              "courseCategory",
+            ],
+            query: courseQuery || "",
               limit: PAGE_LIMIT,
               offset: reset ? 0 : courseOffset,
-              query: courseQuery || undefined
+              sort_by: { createdOn: "desc" },
             },
           }),
         }
@@ -239,7 +249,7 @@ const ContentInputStep = ({
       const newCourses: CourseOption[] =
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
-          label: `${item.name} (${item?.language?.[0]})`,
+          label: `${item.name} (${item?.language?.[0] || "English"})`,
         })) ?? [];
       setAvailableCourseIds((prev) =>
         reset ? newCourses : [...prev, ...newCourses]
@@ -265,7 +275,7 @@ const ContentInputStep = ({
 
     try {
       const response = await fetch(
-        "https://portal.igotkarmayogi.gov.in/api/content/v1/search",
+        "/api/content/v1/search",
         {
           method: "POST",
           headers: {
@@ -338,7 +348,7 @@ const ContentInputStep = ({
 
     try {
       const response = await fetch(
-        `https://portal.igotkarmayogi.gov.in/api/content/v1/read/${courseId}`,
+        `/api/content/v1/read/${courseId}`,
         {
           method: "GET",
           headers: {

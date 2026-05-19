@@ -6,7 +6,7 @@ import ContentInputStep from "@/components/ContentInputStep";
 import ConfigurationStep, { QuestionTypeConfig } from "@/components/ConfigurationStep";
 import ResultsStep from "@/components/ResultsStep";
 import { toast } from "@/hooks/use-toast";
-import { ListChecks, ToggleLeft, MessageSquare, FileText } from "lucide-react";
+import { ListChecks, ToggleLeft, MessageSquare, FileText , Link2 , SquareCheckBig } from "lucide-react";
 import { GenerateLoaderDialog } from "@/components/common/GenerateLoaderDialog";
 import Tooltip from "@mui/material/Tooltip";
 import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
@@ -15,9 +15,9 @@ import { useLocation } from "react-router-dom";
 const defaultQuestionTypes = [
   { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
   { id: "ftb", name: "Fill in the blanks", icon: ToggleLeft, enabled: true, count: 5 },
-  { id: "mtf", name: "Match the following", icon: MessageSquare, enabled: false, count: 1 },
-  { id: "truefalse", name: "True/False", icon: MessageSquare, enabled: false, count: 1 },
-  { id: "multichoice", name: "Multi Select Questions", icon: MessageSquare, enabled: false, count: 1 },
+  { id: "mtf", name: "Match the following", icon: Link2 , enabled: false, count: 1 },
+  { id: "truefalse", name: "True/False", icon: ToggleLeft, enabled: false, count: 1 },
+  { id: "multichoice", name: "Multi Select Questions", icon: SquareCheckBig, enabled: false, count: 1 },
   // { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
 ];
 
@@ -89,12 +89,12 @@ const Index = () => {
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
   const [specificCourseId, setSpecificCourseId] = useState();
   const [bloomValues, setBloomValues] = useState<Record<string, number>>({
-    remember: 10,
-    understand: 20,
-    apply: 25,
-    analyze: 20,
-    evaluate: 15,
-    create: 10,
+    remember: 0,
+    understand: 0,
+    apply: 0,
+    analyze: 0,
+    evaluate: 0,
+    create: 0,
   });
   const [timeLimit, setTimeLimit] = useState(30);
 
