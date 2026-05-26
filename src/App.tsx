@@ -88,7 +88,7 @@ const App = () => {
 
               {/* Layout with Header */}
               <Route element={<MainLayout userDetails={userDetails} isAuthorized={isAuthorized} />}>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Index userDetails={userDetails}/>} />
 
                 <Route
                   path="/past-assessments"

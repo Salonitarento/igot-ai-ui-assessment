@@ -199,6 +199,8 @@ const ResultsStep = ({
   const [selectedFormat, setSelectedFormat] = useState("pdf");
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Question | null>(null);
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvVariant, setCsvVariant] = useState<"basic" | "advance">("basic");
 
   const toggleQuestion = (id: number) => {
     setExpandedQuestions(prev =>
@@ -248,6 +250,7 @@ const ResultsStep = ({
 
 
   const handleExport = async () => {
+    console.log('csvVariant', csvVariant)
     try {
 
       let url = "";
@@ -271,9 +274,16 @@ const ResultsStep = ({
       }
       if (selectedFormat === "csv") {
         // example – update when CSV API is ready
-        url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+        if (csvVariant === 'basic') {
+          url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
+          (courseIds?.length ? courseIds : viewJobData?.course_id)
+          }?format=csv_basic`;
+        }
+        else {
+  url = `/apis/proxies/v8/ai/assessments/v1/download/${specificCourseId ||
           (courseIds?.length ? courseIds : viewJobData?.course_id)
           }?format=csv`;
+        }
         fileName = "assessment.csv";
         mimeType = "application/csv";
       }
@@ -328,6 +338,19 @@ const ResultsStep = ({
     }
   };
 
+  const handleDownloadClick = () => {
+    if (selectedFormat === "csv") {
+      setShowCsvModal(true);
+    } else {
+      handleExport();
+    }
+  };
+
+  const handleCsvDownload = () => {
+    setShowCsvModal(false);
+    handleExport();
+  };
+
   if (!isGenerated) {
     return (
       <div className="card-elevated rounded-xl p-8 text-center">
@@ -354,7 +377,7 @@ const ResultsStep = ({
               <p className="text-sm text-muted-foreground">Your {totalQuestions}-question assessment is ready for review and export.</p>
             </div>
           </div>
-          <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-primary/90 hover:text-accent-foreground h-9 rounded-md px-3 shrink-0 gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-rotate-ccw w-4 h-4"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Regenerate</button>
+          <button onClick={onRegenerate} className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-primary/90 hover:text-accent-foreground h-9 rounded-md px-3 shrink-0 gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-rotate-ccw w-4 h-4"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Regenerate</button>
         </div>
       </div>
 
@@ -882,12 +905,97 @@ const ResultsStep = ({
             <RefreshCw className="w-4 h-4 mr-1.5" />
             Create New
           </Button>
-          <Button onClick={handleExport} className="flex-1 h-11">
+          <Button onClick={handleDownloadClick} className="flex-1 h-11">
             <Download className="w-4 h-4 mr-1.5" />
             Download {exportFormats.find(f => f.id === selectedFormat)?.name}
           </Button>
         </div>
       </div>
+
+      {/* CSV Format Modal */}
+      {showCsvModal && (
+        <div className="fixed inset-[-16px] bg-black/50 z-50 flex items-center justify-center ">
+          <div className="absolute inset-0 bg-black/50 " onClick={() => setShowCsvModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 w-[448px] h-[413px]">
+            <button
+              onClick={() => setShowCsvModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h2 className="text-lg font-semibold leading-none tracking-tight">Choose CSV format</h2>
+            <p className="text-sm text-muted-foreground mb-5 mt-2">
+              Select the CSV variant you want to download for this assessment.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {/* Basic format */}
+              <label
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                  csvVariant === "basic"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/30"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="csvVariant"
+                  value="basic"
+                  checked={csvVariant === "basic"}
+                  onChange={() => setCsvVariant("basic")}
+                  className="mt-0.5 accent-primary w-4 h-4 shrink-0"
+                />
+                <div>
+                  <div className="text-sm font-medium text-foreground">Basic format</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Minimal columns only — question, options, correct answer and question type.
+                    Best for quick imports into LMS or spreadsheets.
+                  </div>
+                </div>
+              </label>
+
+              {/* Advance Assessment format */}
+              <label
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                  csvVariant === "advance"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/30"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="csvVariant"
+                  value="advance"
+                  checked={csvVariant === "advance"}
+                  onChange={() => setCsvVariant("advance")}
+                  className="mt-0.5 accent-primary w-4 h-4 shrink-0"
+                />
+                <div>
+                  <div className="text-sm font-medium text-foreground">Advance Assessment format</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Full metadata — includes Bloom's level, difficulty, competency, course,
+                    learning outcome, rationale and analytics fields. Best for review, moderation
+                    and reporting.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setShowCsvModal(false)} className="px-6">
+                Cancel
+              </Button>
+              <Button onClick={handleCsvDownload} className="px-6">
+                <Download className="w-4 h-4 mr-1.5" />
+                Download CSV
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

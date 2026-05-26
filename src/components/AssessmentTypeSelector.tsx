@@ -56,7 +56,7 @@ const AssessmentTypeSelector = ({ selected, onSelect, currentStep }: AssessmentT
           <button
             key={type.id}
             onClick={() => onSelect(type.id)}
-            disabled={currentStep == 'configuration' || currentStep == 'results'}
+            disabled={currentStep == 'configuration'}
             className={cn(
               "relative flex-1 flex flex-col items-center justify-center gap-3 p-5 rounded-xl border transition-all duration-200",
               isSelected

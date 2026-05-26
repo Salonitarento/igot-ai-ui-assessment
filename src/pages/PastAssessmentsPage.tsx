@@ -28,6 +28,23 @@ const PastAssessmentsPage = () => {
   const [fromDate, setFromDate] = useState<Date | undefined>();
   const [toDate, setToDate] = useState<Date | undefined>();
   const navigate = useNavigate();
+const typeClasses: Record<string, string> = {
+  final:
+    "bg-[hsl(160,50%,94%)] text-[hsl(160,55%,38%)] border-[hsl(160,45%,82%)]",
+
+  comprehensive:
+    "bg-[hsl(40,90%,94%)] text-[hsl(38,85%,45%)] border-[hsl(38,80%,82%)]",
+
+  practice:
+    "bg-[hsl(205,80%,95%)] text-[hsl(205,75%,45%)] border-[hsl(205,70%,85%)]",
+
+  standalone:
+    "bg-[hsl(24,90%,94%)] text-[hsl(20,80%,50%)] border-[hsl(22,80%,84%)]",
+
+  competency:
+    "bg-[hsl(265,70%,96%)] text-[hsl(265,55%,52%)] border-[hsl(265,50%,86%)]",
+};
+
 const handleView = (jobId : string) => {
   pollGenerationStatus(
     jobId,
@@ -393,9 +410,15 @@ const handleView = (jobId : string) => {
                 </div>
                 <div className="min-w-0">
                   {/* <p className="text-sm font-semibold text-foreground font-mono truncate"> {a.code}</p> */}
-                  <Badge variant="secondary" className="inline-flex items-center rounded-full font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-xs capitalize px-2.5 py-0.5 bg-sky-500 text-white border-0">
+                 <Badge
+                  variant="secondary"
+                    className={`inline-flex items-center rounded-full font-semibold transition-colors 
+    focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 
+    hover:bg-primary/80 text-xs capitalize px-2.5 py-0.5 border 
+    ${typeClasses[a.type?.toLowerCase()]}`}
+                  >
                     {a.type}
-                  </Badge>
+                </Badge>
                 </div>
               </div>
             </div>

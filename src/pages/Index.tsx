@@ -71,7 +71,7 @@ const normalizeQuestions = (rawQuestions: any[]) => {
   });
 };
 
-const Index = () => {
+const Index = ({userDetails}) => {
   const location = useLocation();
   const [assessmentType, setAssessmentType] = useState("practice");
   const [assessmentData, setAssessmentData] = useState<any>([]);
@@ -120,6 +120,44 @@ const Index = () => {
     setCompletedSteps(["content", "configuration"]);
     setIsGenerated(true);
     setCurrentStep("results");
+
+    // Restore fields needed for regenerate
+    const config = viewJobData.config || {};
+
+    if (viewJobData.course_names?.length) {
+      setCourseNames(viewJobData.course_names);
+    }
+
+    if (viewJobData.course_id) {
+      setCourseIds(Array.isArray(viewJobData.course_id) ? viewJobData.course_id : [viewJobData.course_id]);
+    } else if (config.course_ids) {
+      const ids = typeof config.course_ids === "string" ? config.course_ids.split(",") : config.course_ids;
+      setCourseIds(ids);
+    }
+
+    if (config.topic_names) {
+      const parsed = typeof config.topic_names === "string" ? JSON.parse(config.topic_names) : config.topic_names;
+      setTopics(Array.isArray(parsed) ? parsed : []);
+    }
+
+    if (config.assessment_type) setAssessmentType(config.assessment_type);
+    if (config.difficulty) setAssessmentLevel(config.difficulty);
+    if (config.language) setLanguage(config.language.charAt(0).toUpperCase() + config.language.slice(1));
+    if (config.time_limit) setTimeLimit(Number(config.time_limit));
+
+    if (config.blooms_config) {
+      const blooms = typeof config.blooms_config === "string" ? JSON.parse(config.blooms_config) : config.blooms_config;
+      setBloomValues(blooms);
+    }
+
+    if (config.question_type_counts) {
+      const counts = typeof config.question_type_counts === "string" ? JSON.parse(config.question_type_counts) : config.question_type_counts;
+      setQuestionTypes(prev => prev.map(qt => ({
+        ...qt,
+        enabled: qt.id in counts,
+        count: counts[qt.id] ?? qt.count,
+      })));
+    }
   }, []);
 
   const handleBloomChange = (id: string, value: number) => {
@@ -161,7 +199,12 @@ const Index = () => {
 
         if (result.status === "FAILED") {
           // onError(result); 
-          onComplete(result);
+          toast({
+            title: "Error",
+            description: "Unable to generate assessment, please try again.",
+            variant: "destructive",
+          });
+          onError(result);
           return;
         }
         setTimeout(poll, 5000);
@@ -174,6 +217,7 @@ const Index = () => {
   };
 
   const handleGenerate = async (source: "generate" | "regenerate" = "generate") => {
+    console.log('called')
     setIsGenerating(true);
     const enabledQuestionTypes = questionTypes
       .filter(q => q.enabled && q.count > 0)
@@ -195,6 +239,7 @@ const Index = () => {
 
     formData.append("course_ids", courseIds);
     formData.append("course_names", courseNames.join(","));
+    console.log('courseNames.join(",")', typeof(courseNames.join(",")))
     const force: any = (source == 'generate') ? false : true
     formData.append("force", force);
 
@@ -219,7 +264,6 @@ const Index = () => {
     [...transcriptFiles, ...materialFiles].forEach(file => {
       formData.append("files", file);
     });
-
     try {
       const response = await fetch(`/apis/proxies/v8/ai/assessments/v1/generate`, {
         method: "POST",
@@ -250,7 +294,12 @@ const Index = () => {
               ? JSON.parse(completedData.assessment_data)
               : completedData.assessment_data;
 
-              setAssessmentData(assessmentDataFetch);
+          if (!assessmentDataFetch?.questions) {
+            setIsGenerating(false);
+            return;
+          }
+
+          setAssessmentData(assessmentDataFetch);
 
           const questionsByType = assessmentDataFetch.questions;
           const rawQuestions = Object.values(questionsByType).flat();
@@ -296,12 +345,12 @@ const Index = () => {
     setQuestionTypes(defaultQuestionTypes);
     setAssessmentLevel("intermediate");
     setBloomValues({
-      remember: 10,
-      understand: 20,
-      apply: 25,
-      analyze: 20,
-      evaluate: 15,
-      create: 10,
+      remember: 0,
+      understand: 0,
+      apply: 0,
+      analyze: 0,
+      evaluate: 0,
+      create: 0,
     });
     setTimeLimit(30);
     setIsGenerated(false);
@@ -387,6 +436,7 @@ const Index = () => {
             onNext={handleContentNext}
             language={language}
             setLanguage={setLanguage}
+            userDetails={userDetails}
           />
         )}
 
