@@ -37,6 +37,7 @@ interface ContentInputStepProps {
   onTranscriptFilesChange: (files: File[]) => void;
   onMaterialFilesChange: (files: File[]) => void;
   onNext: () => void;
+  userDetails: any;
 }
 interface CourseOption {
   value: string; // identifier
@@ -60,6 +61,7 @@ const ContentInputStep = ({
   onTranscriptFilesChange,
   onMaterialFilesChange,
   onNext,
+  userDetails
 }: ContentInputStepProps) => {
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
@@ -72,10 +74,10 @@ const ContentInputStep = ({
   const [languageOpen, setLanguageOpen] = useState(false);
   const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
   const [openTheme, setOpenTheme] = useState(false);
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [selectedThemes, setSelectedThemes] = useState<any[]>([]);
   const [searchTheme, setSearchTheme] = useState("");
   const [openSubTheme, setOpenSubTheme] = useState(false);
-  const [selectedSubThemes, setSelectedSubThemes] = useState<string[]>([]);
+  const [selectedSubThemes, setSelectedSubThemes] = useState<any[]>([]);
   const [searchSubTheme, setSearchSubTheme] = useState("");
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([]);
   const [courseWeights, setCourseWeights] = useState<Record<string, number>>({});
@@ -93,6 +95,60 @@ const ContentInputStep = ({
     { value: "Punjabi", label: "Punjabi" },
     { value: "Gujarati", label: "Gujarati" },
   ];
+  const [allCompetencies, setAllCompetencies] = useState<any[]>([]);
+const [allThemes, setAllThemes] = useState<any[]>([]);
+const [allSubThemes, setAllSubThemes] = useState<any[]>([]);
+const [allThemeData, setAllThemeData] = useState<any[]>([]);
+
+useEffect(() => {
+  const fetchCompetencyFramework = async () => {
+    if (assessmentType !== "Competency") return;
+
+    try {
+      const response = await fetch(
+        "/apis/proxies/v8/framework/v1/read/kcmfinal_fw",
+        {
+          method: "GET",
+          headers: {
+            accept: "application/json, text/plain, */*",
+            locale: "en",
+            org: "dopt",
+            rootorg: "igot",
+            hostpath: "cbp.igotkarmayogi.gov.in",
+            wid: "fc1624a4-fc81-4b74-aec7-141f45c2f934",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch competency framework");
+      }
+
+      const data = await response.json();
+
+      console.log("Competency Framework Data:", data);
+
+      const competencyAreas =
+        data?.result?.framework?.categories?.find(
+          (c: any) => c.code === "competencyarea"
+        )?.terms || [];
+
+      setAllCompetencies(competencyAreas);
+      const allThemeCategory =
+  data?.result?.framework?.categories?.find(
+    (c: any) => c.code === "theme"
+  )?.terms || [];
+
+console.log("ALL THEME CATEGORY", allThemeCategory);
+setAllThemeData(allThemeCategory);
+
+    } catch (error) {
+      console.error("Competency Framework fetch error:", error);
+    }
+  };
+
+  fetchCompetencyFramework();
+}, [assessmentType]);
   const handleCourseSelect = (value: string) => {
 
     if (!isComprehensive) {
@@ -113,7 +169,22 @@ const ContentInputStep = ({
       }
     }
   };
+const handleCompetencySelect = (item: any) => {
+  setSelectedCompetency(item.name);
 
+  setSelectedThemes([]);
+  setSelectedSubThemes([]);
+  setAllSubThemes([]);
+
+  const themes = item?.associations || [];
+
+setAllThemes(
+  [...themes].sort((a: any, b: any) =>
+    a.name.localeCompare(b.name)
+  )
+);
+
+};
   const removeCourseId = (id: string) => {
     const newIds = courseIds.filter((c) => c !== id);
     onCourseIdsChange(courseIds.filter((c) => c !== id));
@@ -181,8 +252,20 @@ const ContentInputStep = ({
   };
 
 
-  const canProceed = assessmentType == 'standalone' ? topics.length > 0 && materialFiles?.length > 0 : topics.length > 0 && courseIds.length > 0;
+const totalWeight = useMemo(() => {
+    return Object.values(courseWeights).reduce((sum, w) => sum + (Number(w) || 0), 0);
+  }, [courseWeights]);
 
+const canProceed =
+  assessmentType === "standalone"
+    ? topics.length > 0 && materialFiles?.length > 0
+    : assessmentType === "Competency"
+    ? topics.length > 0 &&
+      !!selectedCompetency &&
+      selectedThemes.length > 0 &&
+      selectedSubThemes.length > 0
+    : topics.length > 0 && courseIds.length > 0 && totalWeight <= 100;
+    
   const selectedCourseLabels = useMemo(() => {
     if (courseIds.length === 0) return "Select course...";
     if (courseIds.length === 1) {
@@ -219,7 +302,8 @@ const ContentInputStep = ({
           request: {
             filters: {
               contentType: ["Course"],
-              status: ["Live"],
+              courseCategory : ["Course"],
+              status: ["Live" , 'Draft'],
             },
             fields: [
               "identifier",
@@ -228,12 +312,10 @@ const ContentInputStep = ({
               "contentType",
               "courseCategory",
               "createdOn",
+              "status"
             ],
             facets: [
-              "avgRating",
-              "language",
-              "organisation",
-              "courseCategory",
+             "status"
             ],
             query: courseQuery || "",
               limit: PAGE_LIMIT,
@@ -250,6 +332,7 @@ const ContentInputStep = ({
         data?.result?.content?.map((item: any) => ({
           value: item.identifier,
           label: `${item.name} (${item?.language?.[0] || "English"})`,
+          status: item.status
         })) ?? [];
       setAvailableCourseIds((prev) =>
         reset ? newCourses : [...prev, ...newCourses]
@@ -266,54 +349,6 @@ const ContentInputStep = ({
       });
     } finally {
       setIsCoursesLoading(false);
-    }
-  };
-
-  const fetchCoursesByIds = async (ids: string[]) => {
-    // if (!user?.access_token || ids.length === 0) return;
-    if (ids.length === 0) return;
-
-    try {
-      const response = await fetch(
-        "/api/content/v1/search",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${user.access_token}`,
-          },
-          body: JSON.stringify({
-            request: {
-              filters: {
-                identifier: ids,
-              },
-              fields: ["name"],
-              limit: ids.length,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) return;
-
-      const data = await response.json();
-
-      const courses: CourseOption[] =
-        data?.result?.content?.map((item: any) => ({
-          value: item.identifier,
-          label: item.name,
-        })) ?? [];
-
-      setAvailableCourseIds((prev) => {
-        const map = new Map(prev.map(c => [c.value, c.label]));
-        courses.forEach(c => map.set(c.value, c.label));
-
-        // keep NA on top
-        const merged = Array.from(map, ([value, label]) => ({ value, label }));
-        return merged;
-      });
-    } catch (e) {
-      console.error("Failed to hydrate selected courses", e);
     }
   };
 
@@ -382,46 +417,62 @@ const ContentInputStep = ({
 
 
   const filteredThemes = useMemo(() => {
-    return Object.values(THEME_OPTIONS).filter((theme) =>
-      theme.toLowerCase().includes(searchTheme.toLowerCase())
+    return allThemes.filter((theme: any) =>
+      theme.name.toLowerCase().includes(searchTheme.toLowerCase())
     );
-  }, [searchTheme]);
+  }, [allThemes, searchTheme]);
 
-  const toggleTheme = (theme: string) => {
-    setSelectedThemes((prev) =>
-      prev.includes(theme)
-        ? prev.filter((t) => t !== theme)
-        : [...prev, theme]
+const toggleTheme = (theme: any) => {
+  const alreadySelected = selectedThemes.some(
+  (t: any) => t.identifier === theme.identifier
+);
+
+  let updatedThemes: any[] = [];
+
+  if (alreadySelected) {
+    updatedThemes = selectedThemes.filter(
+      (t: any) => t.identifier !== theme.identifier
     );
-  };
+  } else {
+    updatedThemes = [...selectedThemes, theme];
+  }
 
-  const filteredSubThemes = useMemo(() => {
-    if (selectedThemes.length === 0) return [];
+  setSelectedThemes(updatedThemes);
 
-    const subThemes = selectedThemes.flatMap(
-      (theme) => SUB_THEME_MAP[theme as THEME_OPTIONS] || []
-    );
+  setSelectedSubThemes([]);
 
-    return subThemes.filter((subTheme) =>
-      subTheme.toLowerCase().includes(searchSubTheme.toLowerCase())
-    );
-  }, [selectedThemes, searchSubTheme]);
+const subThemes = updatedThemes.flatMap((theme: any) => {
+  const matchedTheme = allThemeData.find(
+    (t: any) => t.identifier === theme.identifier
+  );
 
-  const toggleSubTheme = (subTheme: string) => {
-    setSelectedSubThemes((prev) =>
-      prev.includes(subTheme)
-        ? prev.filter((t) => t !== subTheme)
-        : [...prev, subTheme]
-    );
-  };
+  return matchedTheme?.associations || [];
+});
+  setAllSubThemes(
+  [...subThemes].sort((a: any, b: any) =>
+    a.name.localeCompare(b.name)
+  )
+);
+};
+const filteredSubThemes = useMemo(() => {
+  return allSubThemes.filter((subTheme: any) =>
+    subTheme.name.toLowerCase().includes(searchSubTheme.toLowerCase())
+  );
+}, [allSubThemes, searchSubTheme]);
 
-  const totalWeight = useMemo(() => {
-    return Object.values(courseWeights).reduce((sum, w) => sum + (Number(w) || 0), 0);
-  }, [courseWeights]);
-
+const toggleSubTheme = (subTheme: any) => {
+  setSelectedSubThemes((prev: any[]) =>
+    prev.some((t) => t.identifier === subTheme.identifier)
+      ? prev.filter((t) => t.identifier !== subTheme.identifier)
+      : [...prev, subTheme]
+  );
+};
 
   const handleWeightChange = (courseId: string, value: string) => {
-    const num = Math.min(100, Math.max(0, Number(value)));
+    const proposed = Math.max(0, Number(value));
+    const currentForId = courseWeights[courseId] ?? 0;
+    const otherTotal = totalWeight - currentForId;
+    const num = Math.min(100 - otherTotal, proposed);
 
     setCourseWeights(prev => ({
       ...prev,
@@ -516,7 +567,7 @@ const ContentInputStep = ({
                         No more courses
                       </div>
                     )}
-                    {availableCourseIds.map((course) => (
+                    {availableCourseIds.map((course : any) => (
                       <CommandItem
                         key={course.value}
                         value={course.label}
@@ -533,7 +584,7 @@ const ContentInputStep = ({
                             <Check className="w-3 h-3 text-primary-foreground" />
                           )}
                         </div>
-                        {course.label}
+                        {course.label}  {course.status == "Draft" ? "- Draft" : ""}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -758,13 +809,13 @@ const ContentInputStep = ({
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {Object.values(COMPETENCY_OPTIONS).map((item) => {
-              const isSelected = selectedCompetency === item;
+            {allCompetencies.map((item: any) => {
+              const isSelected = selectedCompetency === item.name;
 
               return (
                 <button
-                  key={item}
-                  onClick={() => setSelectedCompetency(item)}
+                  key={item.identifier}
+                 onClick={() => handleCompetencySelect(item)}
                   className={cn(
                     "relative px-4 py-3 rounded-lg border text-sm font-medium transition-all duration-200",
                     isSelected
@@ -772,7 +823,7 @@ const ContentInputStep = ({
                       : "border-border text-muted-foreground hover:border-primary/40"
                   )}
                 >
-                  {item}
+                  {item.name}
 
                   {isSelected && (
                     <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
@@ -847,12 +898,15 @@ const ContentInputStep = ({
 
                 <CommandList>
                   <CommandGroup>
-                    {filteredThemes.map((theme) => {
-                      const selected = selectedThemes.includes(theme);
+                    {filteredThemes.map((theme: any) => {
+  const selected = selectedThemes.some(
+    (t: any) => t.identifier === theme.identifier
+  );
+
 
                       return (
                         <CommandItem
-                          key={theme}
+                          key={theme.identifier}
                           onSelect={() => toggleTheme(theme)}
                           className="cursor-pointer py-2.5"
                         >
@@ -868,7 +922,7 @@ const ContentInputStep = ({
                             )}
                           </div>
 
-                          {theme}
+                          {theme.name}
                         </CommandItem>
                       );
                     })}
@@ -879,13 +933,13 @@ const ContentInputStep = ({
           </Popover>
           {selectedThemes.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {selectedThemes.map((theme) => (
+              {selectedThemes.map((theme: any) => (
                 <Badge
-                  key={theme}
+                  key={theme.identifier}
                   variant="secondary"
                   className="text-xs px-2 py-1 flex items-center gap-1"
                 >
-                  {theme}
+                  {theme.name}
 
                   <button
                     onClick={() => toggleTheme(theme)}
@@ -960,12 +1014,14 @@ const ContentInputStep = ({
                   <CommandEmpty>No sub-theme found.</CommandEmpty>
 
                   <CommandGroup>
-                    {filteredSubThemes.map((subTheme) => {
-                      const selected = selectedSubThemes.includes(subTheme);
+                    {filteredSubThemes.map((subTheme: any) => {
+                    const selected = selectedSubThemes.some(
+                      (t: any) => t.identifier === subTheme.identifier
+                    );
 
                       return (
                         <CommandItem
-                          key={subTheme}
+                          key={subTheme.identifier}
                           onSelect={() => toggleSubTheme(subTheme)}
                           className="cursor-pointer py-2.5"
                         >
@@ -981,7 +1037,7 @@ const ContentInputStep = ({
                             )}
                           </div>
 
-                          {subTheme}
+                          {subTheme.name}
                         </CommandItem>
                       );
                     })}
@@ -994,13 +1050,13 @@ const ContentInputStep = ({
           {/* Selected Chips */}
           {selectedSubThemes.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {selectedSubThemes.map((subTheme) => (
+              {selectedSubThemes.map((subTheme : any) => (
                 <Badge
-                  key={subTheme}
+                  key={subTheme.identifier}
                   variant="secondary"
                   className="text-xs px-2 py-1 flex items-center gap-1"
                 >
-                  {subTheme}
+                  {subTheme.name}
 
                   <button
                     onClick={() => toggleSubTheme(subTheme)}
@@ -1361,7 +1417,7 @@ const ContentInputStep = ({
       <Button
         onClick={onNext}
         disabled={!canProceed}
-        className="w-full h-11"
+        className={canProceed ? `w-full h-11` : `w-full h-11 opacity-50 bg-primary/50 cursor-not-allowed`}
       >
         Save & Continue
         <ChevronRight className="w-4 h-4 ml-1" />
