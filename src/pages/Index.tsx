@@ -259,6 +259,7 @@ const Index = ({userDetails}) => {
     // 🔹 Dummy placeholders
     formData.append("topic_names", JSON.stringify(topics));
     formData.append("language", (language).toLowerCase());
+    formData.append("additional_instructions", notes || "—");
     // formData.append("additional_instructions", "Auto-generated");
     // 🔹 Append transcript files
     [...transcriptFiles, ...materialFiles].forEach(file => {
