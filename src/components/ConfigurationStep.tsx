@@ -451,7 +451,7 @@ const ConfigurationStep = ({
         </Button>
         <Button
           onClick={onGenerate}
-          disabled={isGenerating || totalQuestions === 0 || bloomTotal !== 100}
+          disabled={isGenerating || totalQuestions === 0 || (isBloomOpen && bloomTotal !== 100)}
           className="flex-[2] h-11"
         >
           {isGenerating ? (
