@@ -153,7 +153,6 @@ setAllThemeData(allThemeCategory);
   fetchCompetencyFramework();
 }, [assessmentType]);
   const handleCourseSelect = (value: string) => {
-    console.log("called...")
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
