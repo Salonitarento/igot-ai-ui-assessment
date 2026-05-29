@@ -46,10 +46,12 @@ const typeClasses: Record<string, string> = {
 };
 
 const handleView = (jobId : string) => {
+  const originalItem = assessmentList.find((item: any) => item.job_id === jobId);
   pollGenerationStatus(
     jobId,
     (data) => {
-      navigate("/", { state: { viewJobData: data } });
+      const config = { ...(data.config || {}), ...(originalItem?.config || {}) };
+      navigate("/", { state: { viewJobData: { ...data, config } } });
     },
     (error) => {
       console.error("Polling failed:", error);
