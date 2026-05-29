@@ -27,6 +27,8 @@ interface ContentInputStepProps {
   topics: string[];
   notes: string;
   transcriptFiles: File[];
+  learningOutcomes: string[];
+  setLearningOutcomes: (outcomes: string[]) => void;
   materialFiles: File[];
   language: string;
   setLanguage: (language: string) => void;
@@ -61,7 +63,9 @@ const ContentInputStep = ({
   onTranscriptFilesChange,
   onMaterialFilesChange,
   onNext,
-  userDetails
+  userDetails,
+  learningOutcomes,
+  setLearningOutcomes
 }: ContentInputStepProps) => {
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
@@ -79,7 +83,6 @@ const ContentInputStep = ({
   const [openSubTheme, setOpenSubTheme] = useState(false);
   const [selectedSubThemes, setSelectedSubThemes] = useState<any[]>([]);
   const [searchSubTheme, setSearchSubTheme] = useState("");
-  const [learningOutcomes, setLearningOutcomes] = useState<string[]>([]);
   const [courseWeights, setCourseWeights] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";

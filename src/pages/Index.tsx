@@ -101,6 +101,7 @@ const Index = ({userDetails}) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [learningOutcomes, setLearningOutcomes] = useState<string[]>([]);
 
   useEffect(() => {
     const viewJobData = location.state?.viewJobData;
@@ -143,7 +144,8 @@ const Index = ({userDetails}) => {
     if (config.assessment_type) setAssessmentType(config.assessment_type);
     if (config.difficulty) setAssessmentLevel(config.difficulty);
     if (config.language) setLanguage(config.language.charAt(0).toUpperCase() + config.language.slice(1));
-    if (config.time_limit) setTimeLimit(Number(config.time_limit));
+    const timeLimitValue = config.time_limit ?? viewJobData.time_limit;
+    if (timeLimitValue) setTimeLimit(Number(timeLimitValue));
 
     if (config.blooms_config) {
       const blooms = typeof config.blooms_config === "string" ? JSON.parse(config.blooms_config) : config.blooms_config;
@@ -357,9 +359,9 @@ const Index = ({userDetails}) => {
     setIsGenerated(false);
   };
 
-  const totalQuestions = questionTypes
-    .filter((qt) => qt.enabled)
-    .reduce((sum, qt) => sum + qt.count, 0);
+  const totalQuestions = isGenerated && questions?.length > 0
+    ? questions?.length
+    : questionTypes?.filter((qt) => qt.enabled)?.reduce((sum, qt) => sum + qt.count, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -403,7 +405,11 @@ const Index = ({userDetails}) => {
           <AssessmentTypeSelector
             selected={assessmentType}
             onSelect={(type) => {
+              if (currentStep === 'results') {
+                handleStartOver();
+              }
               setAssessmentType(type);
+              setLearningOutcomes([]);
               setCourseIds([]);
             }}
             currentStep={currentStep}
@@ -438,6 +444,8 @@ const Index = ({userDetails}) => {
             language={language}
             setLanguage={setLanguage}
             userDetails={userDetails}
+            setLearningOutcomes={setLearningOutcomes}
+            learningOutcomes={learningOutcomes}
           />
         )}
 
