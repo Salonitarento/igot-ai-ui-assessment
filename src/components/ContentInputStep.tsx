@@ -554,7 +554,7 @@ const toggleSubTheme = (subTheme: any) => {
                   }}
                 />
                 <CommandList
-                  style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}
+                  className="popover-command-list"
                   onScroll={(e) => {
                   const target = e.currentTarget;
                   if (
@@ -910,7 +910,7 @@ const toggleSubTheme = (subTheme: any) => {
                   onValueChange={setSearchTheme}
                 />
 
-                <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
+                <CommandList className="popover-command-list">
                   <CommandGroup>
                     {filteredThemes.map((theme: any) => {
   const selected = selectedThemes.some(
@@ -1029,7 +1029,7 @@ const toggleSubTheme = (subTheme: any) => {
                   onValueChange={setSearchSubTheme}
                 />
 
-                <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
+                <CommandList className="popover-command-list">
                   <CommandEmpty>No sub-theme found.</CommandEmpty>
 
                   <CommandGroup>
@@ -1237,7 +1237,7 @@ const toggleSubTheme = (subTheme: any) => {
           >
             <Command>
               <CommandInput placeholder="Search language..." />
-              <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
+              <CommandList className="popover-command-list">
                 <CommandEmpty>No language found.</CommandEmpty>
                 <CommandGroup>
                   {LANGUAGES.map(lang => (
