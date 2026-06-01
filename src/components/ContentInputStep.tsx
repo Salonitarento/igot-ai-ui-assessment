@@ -537,7 +537,11 @@ const toggleSubTheme = (subTheme: any) => {
               </Button>
 
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0 bg-popover border shadow-lg" align="start">
+            <PopoverContent
+              className="p-0 bg-popover border shadow-lg"
+              align="start"
+              style={{ width: 'var(--radix-popover-trigger-width)', maxWidth: 'var(--radix-popover-content-available-width)' }}
+            >
               <Command>
                 <CommandInput
                   placeholder="Search courses..."
@@ -549,7 +553,9 @@ const toggleSubTheme = (subTheme: any) => {
                     setHasMoreCourses(true);
                   }}
                 />
-                <CommandList onScroll={(e) => {
+                <CommandList
+                  style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}
+                  onScroll={(e) => {
                   const target = e.currentTarget;
                   if (
                     target.scrollTop + target.clientHeight >= target.scrollHeight - 20
@@ -891,7 +897,12 @@ const toggleSubTheme = (subTheme: any) => {
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent side="bottom" align="start" className=" w-full p-0">
+            <PopoverContent
+              side="bottom"
+              align="start"
+              className="p-0"
+              style={{ width: 'var(--radix-popover-trigger-width)', maxWidth: 'var(--radix-popover-content-available-width)' }}
+            >
               <Command>
                 <CommandInput
                   placeholder="Search theme..."
@@ -899,7 +910,7 @@ const toggleSubTheme = (subTheme: any) => {
                   onValueChange={setSearchTheme}
                 />
 
-                <CommandList>
+                <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
                   <CommandGroup>
                     {filteredThemes.map((theme: any) => {
   const selected = selectedThemes.some(
@@ -1005,7 +1016,12 @@ const toggleSubTheme = (subTheme: any) => {
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent side="bottom" align="start" className="w-full p-0">
+            <PopoverContent
+              side="bottom"
+              align="start"
+              className="p-0"
+              style={{ width: 'var(--radix-popover-trigger-width)', maxWidth: 'var(--radix-popover-content-available-width)' }}
+            >
               <Command>
                 <CommandInput
                   placeholder="Search sub-theme..."
@@ -1013,7 +1029,7 @@ const toggleSubTheme = (subTheme: any) => {
                   onValueChange={setSearchSubTheme}
                 />
 
-                <CommandList>
+                <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
                   <CommandEmpty>No sub-theme found.</CommandEmpty>
 
                   <CommandGroup>
@@ -1214,10 +1230,14 @@ const toggleSubTheme = (subTheme: any) => {
             </Button>
           </PopoverTrigger>
 
-          <PopoverContent className="w-full p-0" align="start">
+          <PopoverContent
+            className="p-0"
+            align="start"
+            style={{ width: 'var(--radix-popover-trigger-width)', maxWidth: 'var(--radix-popover-content-available-width)' }}
+          >
             <Command>
               <CommandInput placeholder="Search language..." />
-              <CommandList>
+              <CommandList style={{ maxHeight: 'min(300px, calc(var(--radix-popover-content-available-height, 400px) - 2.75rem))' }}>
                 <CommandEmpty>No language found.</CommandEmpty>
                 <CommandGroup>
                   {LANGUAGES.map(lang => (

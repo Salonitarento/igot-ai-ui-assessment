@@ -818,7 +818,7 @@ const ResultsStep = ({
 
         <div className="p-3 bg-muted/30 border-t border-border text-center">
           <p className="text-xs text-muted-foreground">
-            Showing {questions.length} questions • Hover over a question and click the pencil icon to edit
+            Showing {questions.length} questions
           </p>
         </div>
       </div>

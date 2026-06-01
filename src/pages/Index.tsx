@@ -89,12 +89,12 @@ const Index = ({userDetails}) => {
   const [assessmentLevel, setAssessmentLevel] = useState("intermediate");
   const [specificCourseId, setSpecificCourseId] = useState();
   const [bloomValues, setBloomValues] = useState<Record<string, number>>({
-    remember: 0,
-    understand: 0,
-    apply: 0,
-    analyze: 0,
-    evaluate: 0,
-    create: 0,
+    remember: 10,
+    understand: 20,
+    apply: 25,
+    analyze: 20,
+    evaluate: 15,
+    create: 10,
   });
   const [timeLimit, setTimeLimit] = useState(30);
 
@@ -348,12 +348,12 @@ const Index = ({userDetails}) => {
     setQuestionTypes(defaultQuestionTypes);
     setAssessmentLevel("intermediate");
     setBloomValues({
-      remember: 0,
-      understand: 0,
-      apply: 0,
-      analyze: 0,
-      evaluate: 0,
-      create: 0,
+      remember: 10,
+    understand: 20,
+    apply: 25,
+    analyze: 20,
+    evaluate: 15,
+    create: 10,
     });
     setTimeLimit(30);
     setIsGenerated(false);
