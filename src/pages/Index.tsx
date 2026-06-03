@@ -97,12 +97,12 @@ const Index = ({userDetails}) => {
     create: 10,
   });
   const [timeLimit, setTimeLimit] = useState(30);
+  const [bloomEnabled, setBloomEnabled] = useState(true);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([]);
-
   useEffect(() => {
     const viewJobData = location.state?.viewJobData;
     if (!viewJobData) return;
@@ -136,8 +136,9 @@ const Index = ({userDetails}) => {
       setCourseIds(ids);
     }
 
-    if (config.topic_names) {
-      const parsed = typeof config.topic_names === "string" ? JSON.parse(config.topic_names) : config.topic_names;
+    const rawTopicNames = viewJobData.topic_names ?? config.topic_names;
+    if (rawTopicNames) {
+      const parsed = typeof rawTopicNames === "string" ? JSON.parse(rawTopicNames) : rawTopicNames;
       setTopics(Array.isArray(parsed) ? parsed : []);
     }
 
@@ -246,7 +247,7 @@ const Index = ({userDetails}) => {
     formData.append("force", force);
 
     // 🔹 From this component
-    formData.append("assessment_type", assessmentType);
+    formData.append("assessment_type", assessmentType.toLowerCase());
     formData.append("difficulty", assessmentLevel);
     formData.append("total_questions", totalQuestions.toString());
 
@@ -256,7 +257,9 @@ const Index = ({userDetails}) => {
 
 
     formData.append("time_limit", timeLimit.toString());
-    formData.append("blooms_config", JSON.stringify(bloomValues));
+    if (bloomEnabled) {
+      formData.append("blooms_config", JSON.stringify(bloomValues));
+    }
 
     // 🔹 Dummy placeholders
     formData.append("topic_names", JSON.stringify(topics));
@@ -341,19 +344,21 @@ const Index = ({userDetails}) => {
     setCurrentStep("content");
     setCompletedSteps([]);
     setCourseIds([]);
+    setCourseNames([]);
     setTopics([]);
     setNotes("");
     setTranscriptFiles([]);
     setMaterialFiles([]);
+    setLearningOutcomes([]);
     setQuestionTypes(defaultQuestionTypes);
     setAssessmentLevel("intermediate");
     setBloomValues({
       remember: 10,
-    understand: 20,
-    apply: 25,
-    analyze: 20,
-    evaluate: 15,
-    create: 10,
+      understand: 20,
+      apply: 25,
+      analyze: 20,
+      evaluate: 15,
+      create: 10,
     });
     setTimeLimit(30);
     setIsGenerated(false);
@@ -454,15 +459,16 @@ const Index = ({userDetails}) => {
             questionTypes={questionTypes}
             assessmentLevel={assessmentLevel}
             bloomValues={bloomValues}
+            bloomEnabled={bloomEnabled}
             timeLimit={timeLimit}
             onQuestionTypesChange={setQuestionTypes}
             onAssessmentLevelChange={setAssessmentLevel}
             onBloomChange={handleBloomChange}
+            onBloomToggle={setBloomEnabled}
             onTimeLimitChange={setTimeLimit}
             onBack={() => setCurrentStep("content")}
             onGenerate={() => handleGenerate("generate")}
             isGenerating={isGenerating}
-            courseIds={courseIds}
           />
         )}
 

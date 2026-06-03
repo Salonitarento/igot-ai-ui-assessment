@@ -11,7 +11,6 @@ import {
   ListChecks,
   Minus,
   Plus,
-  ChevronDown
 } from "lucide-react";
 import { useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
@@ -28,15 +27,16 @@ interface ConfigurationStepProps {
   questionTypes: QuestionTypeConfig[];
   assessmentLevel: string;
   bloomValues: Record<string, number>;
+  bloomEnabled: boolean;
   timeLimit: number;
   onQuestionTypesChange: (types: QuestionTypeConfig[]) => void;
   onAssessmentLevelChange: (level: string) => void;
   onBloomChange: (id: string, value: number) => void;
+  onBloomToggle: (enabled: boolean) => void;
   onTimeLimitChange: (time: number) => void;
   onBack: () => void;
   onGenerate: () => void;
   isGenerating: boolean;
-  courseIds: any
 }
 
 const assessmentLevels = [
@@ -46,30 +46,29 @@ const assessmentLevels = [
 ];
 
 const bloomLevels = [
-  { id: "Remember", name: "Remember", description: "Recall facts", color: "bg-sky-100 border-sky-200 text-sky-700" },
-  { id: "Understand", name: "Understand", description: "Explain concepts", color: "bg-teal-100 border-teal-200 text-teal-700" },
-  { id: "Apply", name: "Apply", description: "Use in new situations", color: "bg-emerald-100 border-emerald-200 text-emerald-700" },
-  { id: "Analyze", name: "Analyze", description: "Draw connections", color: "bg-amber-100 border-amber-200 text-amber-700" },
-  { id: "Evaluate", name: "Evaluate", description: "Justify decisions", color: "bg-orange-100 border-orange-200 text-orange-700" },
-  { id: "Create", name: "Create", description: "Produce new work", color: "bg-rose-100 border-rose-200 text-rose-700" },
+  { id: "remember", name: "Remember", description: "Recall facts", color: "bg-sky-100 border-sky-200 text-sky-700" },
+  { id: "understand", name: "Understand", description: "Explain concepts", color: "bg-teal-100 border-teal-200 text-teal-700" },
+  { id: "apply", name: "Apply", description: "Use in new situations", color: "bg-emerald-100 border-emerald-200 text-emerald-700" },
+  { id: "analyze", name: "Analyze", description: "Draw connections", color: "bg-amber-100 border-amber-200 text-amber-700" },
+  { id: "evaluate", name: "Evaluate", description: "Justify decisions", color: "bg-orange-100 border-orange-200 text-orange-700" },
+  { id: "create", name: "Create", description: "Produce new work", color: "bg-rose-100 border-rose-200 text-rose-700" },
 ];
 
 const ConfigurationStep = ({
   questionTypes,
   assessmentLevel,
   bloomValues,
+  bloomEnabled,
   timeLimit,
   onQuestionTypesChange,
   onAssessmentLevelChange,
   onBloomChange,
+  onBloomToggle,
   onTimeLimitChange,
   onBack,
   onGenerate,
   isGenerating,
-  courseIds
 }: ConfigurationStepProps) => {
-
-  const [isBloomOpen, setIsBloomOpen] = useState(true);
   const [timeError, setTimeError] = useState(false);
 
 
@@ -335,7 +334,7 @@ const ConfigurationStep = ({
           </div>
 
           <div className="flex items-center gap-4">
-            {isBloomOpen &&
+            {bloomEnabled &&
               (<div className={cn(
                 "px-3 py-1 rounded-full text-sm font-medium",
                 bloomTotal === 100
@@ -347,16 +346,16 @@ const ConfigurationStep = ({
               )}
             {/* Toggle Switch */}
             <button
-              onClick={() => setIsBloomOpen(!isBloomOpen)}
+              onClick={() => onBloomToggle(!bloomEnabled)}
               className={cn(
                 "w-10 h-5 rounded-full transition-colors relative",
-                isBloomOpen ? "bg-primary" : "bg-muted-foreground/30"
+                bloomEnabled ? "bg-primary" : "bg-muted-foreground/30"
               )}
             >
               <div
                 className={cn(
                   "w-4 h-4 bg-white rounded-full absolute top-[2px] transition-all shadow",
-                  isBloomOpen ? "left-[22px]" : "left-[2px]"
+                  bloomEnabled ? "left-[22px]" : "left-[2px]"
                 )}
               />
             </button>
@@ -367,7 +366,7 @@ const ConfigurationStep = ({
         <div
           className={cn(
             "transition-all duration-500 ease-in-out overflow-hidden",
-            isBloomOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            bloomEnabled ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
           )}>
           <div className="mb-4">
             <div className="h-6 rounded-full overflow-hidden flex bg-muted/50">
@@ -432,7 +431,7 @@ const ConfigurationStep = ({
           </div>
         </div>
 
-        {!isBloomOpen && (
+        {!bloomEnabled && (
           <div className="text-sm text-muted-foreground text-center py-4">
             Bloom's Taxonomy distribution is disabled. Questions will be generated without cognitive level targeting.
           </div>
@@ -451,7 +450,7 @@ const ConfigurationStep = ({
         </Button>
         <Button
           onClick={onGenerate}
-          disabled={isGenerating || totalQuestions === 0 || (isBloomOpen && bloomTotal !== 100)}
+          disabled={isGenerating || totalQuestions === 0 || (bloomEnabled && bloomTotal !== 100)}
           className="flex-[2] h-11"
         >
           {isGenerating ? (

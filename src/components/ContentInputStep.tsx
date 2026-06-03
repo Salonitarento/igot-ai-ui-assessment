@@ -356,9 +356,35 @@ const canProceed =
   };
 
   useEffect(() => {
-    if (courseIds.length > 0 && courseIds[0] !== "NA") {
-      fetchLearningOutcomes(courseIds[0]);
+    if (courseIds.length === 0 || courseIds[0] === "NA") {
+      setLearningOutcomes([]);
+      return;
     }
+    const fetchAll = async () => {
+      try {
+        const results = await Promise.all(
+          courseIds.map(async (courseId) => {
+            const response = await fetch(`/api/content/v1/read/${courseId}`, {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (!response.ok) return [];
+            const data = await response.json();
+            const htmlInstructions = data?.result?.content?.instructions || "";
+            return parseLearningOutcomes(htmlInstructions);
+          })
+        );
+        setLearningOutcomes([...new Set(results.flat())]);
+      } catch (error) {
+        console.error("Learning Outcomes fetch error:", error);
+        toast({
+          title: "Error",
+          description: "Unable to load learning outcomes",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchAll();
   }, [courseIds, user?.access_token]);
 
   useEffect(() => {
