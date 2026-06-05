@@ -175,7 +175,6 @@ const bloomColors: Record<string, { bg: string; text: string; border: string; li
 const exportFormats = [
   { id: "pdf", name: "PDF", icon: FileText, description: "Print-ready document" },
   { id: "word", name: "Word", icon: FileType, description: "Editable .docx file" },
-  { id: "json", name: "JSON", icon: FileJson, description: "Raw data format" },
   { id: "csv", name: "CSV", icon: FileJson, description: "CSV file" },
 ];
 
@@ -449,7 +448,7 @@ const ResultsStep = ({
         <div className="divide-y divide-border">
           {questions?.map((q) => {
             const typeMap: Record<string, string> = {
-              "MCQ": "Multiple Choice Question",
+              "MCQ": "Single selection MCQs",
               "FTB": "FTB Question",
               "MTF": "MTF Question",
               "MULTICHOICE": "Multi-Choice Question",
@@ -866,7 +865,7 @@ const ResultsStep = ({
       {/* Export Options */}
       <div className="card-elevated p-4">
         <h4 className="text-sm font-medium text-foreground mb-3">Export Format</h4>
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           {exportFormats.map((format) => {
             const Icon = format.icon;
             const isSelected = selectedFormat === format.id;

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -24,6 +24,7 @@ import { ACCESS_TOKEN_2 } from "./ConstantAPI";
 interface ContentInputStepProps {
   assessmentType: string;
   courseIds: string[];
+  courseNames?: string[];
   topics: string[];
   notes: string;
   transcriptFiles: File[];
@@ -50,6 +51,7 @@ interface CourseOption {
 const ContentInputStep = ({
   assessmentType,
   courseIds,
+  courseNames,
   topics,
   notes,
   transcriptFiles,
@@ -75,6 +77,7 @@ const ContentInputStep = ({
   const [isCoursesLoading, setIsCoursesLoading] = useState(false);
   const [courseOffset, setCourseOffset] = useState(0);
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
   const [openTheme, setOpenTheme] = useState(false);
@@ -84,6 +87,7 @@ const ContentInputStep = ({
   const [selectedSubThemes, setSelectedSubThemes] = useState<any[]>([]);
   const [searchSubTheme, setSearchSubTheme] = useState("");
   const [courseWeights, setCourseWeights] = useState<Record<string, number>>({});
+  const [courseNameMap, setCourseNameMap] = useState<Record<string, string>>({}); // Maps course ID to display name
   const { user } = useAuth();
   const isComprehensive = assessmentType === "comprehensive";
   const LANGUAGES = [
@@ -102,6 +106,20 @@ const ContentInputStep = ({
 const [allThemes, setAllThemes] = useState<any[]>([]);
 const [allSubThemes, setAllSubThemes] = useState<any[]>([]);
 const [allThemeData, setAllThemeData] = useState<any[]>([]);
+ console.log('availableCourseIds', availableCourseIds)
+
+// Initialize courseNameMap when courseNames are passed in (e.g., on page load after generation)
+useEffect(() => {
+  if (courseNames && courseNames.length > 0 && courseIds.length > 0) {
+    const newMap: Record<string, string> = {};
+    courseIds.forEach((id, index) => {
+      if (courseNames[index]) {
+        newMap[id] = courseNames[index];
+      }
+    });
+    setCourseNameMap(newMap);
+  }
+}, []);
 
 useEffect(() => {
   const fetchCompetencyFramework = async () => {
@@ -153,22 +171,32 @@ setAllThemeData(allThemeCategory);
   fetchCompetencyFramework();
 }, [assessmentType]);
   const handleCourseSelect = (value: string) => {
+    const selectedCourse = availableCourseIds.find(c => c.value === value);
+    const courseName = selectedCourse?.label || value;
 
     if (!isComprehensive) {
       onCourseIdsChange([value]);
-      onCourseNamesChange(getNames([value]));
+      onCourseNamesChange([courseName]);
+      // Update the mapping for persistent display
+      setCourseNameMap({ [value]: courseName });
       setCourseSearchOpen(false);
       fetchLearningOutcomes(value);
     } else {
       const filtered = courseIds.filter(id => id !== "NA");
       if (filtered.includes(value)) {
         const newIds = filtered.filter(id => id !== value);
-        onCourseIdsChange(filtered.filter(id => id !== value));
-        onCourseNamesChange(getNames(newIds));
+        onCourseIdsChange(newIds);
+        // Update mapping - remove deleted course
+        const newMap = { ...courseNameMap };
+        delete newMap[value];
+        setCourseNameMap(newMap);
+        onCourseNamesChange(newIds.map(id => courseNameMap[id] || availableCourseIds.find(c => c.value === id)?.label || id));
       } else {
         const newIds = [...filtered, value];
-        onCourseIdsChange([...filtered, value]);
-        onCourseNamesChange(getNames(newIds));
+        onCourseIdsChange(newIds);
+        // Update mapping - add new course
+        setCourseNameMap(prev => ({ ...prev, [value]: courseName }));
+        onCourseNamesChange(newIds.map(id => (id === value ? courseName : (courseNameMap[id] || availableCourseIds.find(c => c.value === id)?.label || id))));
       }
     }
   };
@@ -190,12 +218,20 @@ setAllThemes(
 };
   const removeCourseId = (id: string) => {
     const newIds = courseIds.filter((c) => c !== id);
-    onCourseIdsChange(courseIds.filter((c) => c !== id));
-    onCourseNamesChange(getNames(newIds));
+    onCourseIdsChange(newIds);
+    // Update mapping - remove deleted course
+    const newMap = { ...courseNameMap };
+    delete newMap[id];
+    setCourseNameMap(newMap);
+    onCourseNamesChange(newIds.map(cid => courseNameMap[cid] || availableCourseIds.find(c => c.value === cid)?.label || cid));
   };
 
   const getNames = (ids: string[]) =>
-    ids.map(id => availableCourseIds?.find(c => c.value === id)?.label || id);
+    ids.map(id => courseNameMap[id] || availableCourseIds?.find(c => c.value === id)?.label || id);
+
+  const getCourseName = (id: string): string => {
+    return courseNameMap[id] || availableCourseIds?.find(c => c.value === id)?.label || id;
+  };
   const addTopic = () => {
     if (newTopic.trim() && !topics.includes(newTopic.trim())) {
       onTopicsChange([...topics, newTopic.trim()]);
@@ -272,21 +308,101 @@ const canProceed =
   const selectedCourseLabels = useMemo(() => {
     if (courseIds.length === 0) return "Select course...";
     if (courseIds.length === 1) {
-      const course = availableCourseIds.find(c => c.value === courseIds[0]);
-      return course?.label || courseIds[0];
+      const courseId = courseIds[0];
+      return getCourseName(courseId);
     }
     return `${courseIds.length} courses selected`;
-  }, [courseIds, availableCourseIds]); // ✅ FIX
+  }, [courseIds, availableCourseIds, courseNameMap]);
 
-  // useEffect(() => {
-  //   if (!user?.access_token) return;
+  // Handle course dropdown open/close and search query changes
   useEffect(() => {
-    if (courseSearchOpen) {
+    if (!courseSearchOpen) return;
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
+    // Reset and fetch courses when dropdown opens or search query changes
+    const loadCourses = async () => {
+      setIsCoursesLoading(true);
       setCourseOffset(0);
       setHasMoreCourses(true);
-      fetchCourses(true);
-    }
-  }, [courseQuery]);
+      setAvailableCourseIds([]); // Clear previous results
+
+      try {
+        const response = await fetch(
+          "/apis/proxies/v8/sunbirdigot/v4/search",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            signal: abortController.signal,
+            body: JSON.stringify({
+              request: {
+                filters: {
+                  contentType: ["Course"],
+                  courseCategory : ["Course"],
+                  status: ["Live" , 'Draft'],
+                },
+                fields: [
+                  "identifier",
+                  "name",
+                  "language",
+                  "contentType",
+                  "courseCategory",
+                  "createdOn",
+                  "status"
+                ],
+                facets: [
+                 "status"
+                ],
+                query: courseQuery || "",
+                limit: PAGE_LIMIT,
+                offset: 0,
+                sort_by: { createdOn: "desc" },
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch courses");
+        const data = await response.json();
+        const newCourses: CourseOption[] =
+          data?.result?.content?.map((item: any) => ({
+            value: item.identifier,
+            label: `${item.name} (${item?.language?.[0] || "English"})`,
+            status: item.status
+          })) ?? [];
+        
+        // Only update state if this request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setAvailableCourseIds(newCourses);
+          setCourseOffset(PAGE_LIMIT);
+          setHasMoreCourses(newCourses.length === PAGE_LIMIT);
+        }
+      } catch (error) {
+        // Only show error if request wasn't aborted
+        if ((error as Error).name !== 'AbortError') {
+          console.error("Course fetch error:", error);
+          toast({
+            title: "Error",
+            description: "Unable to load courses",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setIsCoursesLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, [courseSearchOpen, courseQuery]);
 
  const fetchCourses = async (reset = false) => {
   if (isCoursesLoading || (!hasMoreCourses && !reset)) return;
@@ -301,6 +417,7 @@ const canProceed =
         headers: {
           "Content-Type": "application/json",
         },
+        signal: abortControllerRef.current?.signal,
         body: JSON.stringify({
           request: {
             filters: {
@@ -337,19 +454,34 @@ const canProceed =
           label: `${item.name} (${item?.language?.[0] || "English"})`,
           status: item.status
         })) ?? [];
-      setAvailableCourseIds((prev) =>
-        reset ? newCourses : [...prev, ...newCourses]
-      );
+     
+      // Only update state if not aborted
+      if (!abortControllerRef.current?.signal.aborted) {
+        setAvailableCourseIds((prev) => {
+          const merged = reset
+            ? newCourses
+            : [...prev, ...newCourses];
 
-      setCourseOffset((prev) => (reset ? PAGE_LIMIT : prev + PAGE_LIMIT));
-      setHasMoreCourses(newCourses.length === PAGE_LIMIT);
+          return Array.from(
+            new Map(
+              merged.map((course) => [course.value, course])
+            ).values()
+          );
+        });
+
+        setCourseOffset((prev) => (reset ? PAGE_LIMIT : prev + PAGE_LIMIT));
+        setHasMoreCourses(newCourses.length === PAGE_LIMIT);
+      }
     } catch (error) {
-      console.error("Course fetch error:", error);
-      toast({
-        title: "Error",
-        description: "Unable to load more courses",
-        variant: "destructive",
-      });
+      // Only show error if request wasn't aborted
+      if ((error as Error).name !== 'AbortError') {
+        console.error("Course fetch error:", error);
+        toast({
+          title: "Error",
+          description: "Unable to load more courses",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsCoursesLoading(false);
     }
@@ -386,14 +518,6 @@ const canProceed =
     };
     fetchAll();
   }, [courseIds, user?.access_token]);
-
-  useEffect(() => {
-    if (courseSearchOpen) {
-      setCourseOffset(0);
-      setHasMoreCourses(true);
-      fetchCourses(true);
-    }
-  }, [courseSearchOpen]);
 
   const parseLearningOutcomes = (html: string): string[] => {
     const parser = new DOMParser();
@@ -517,10 +641,10 @@ const toggleSubTheme = (subTheme: any) => {
         assessmentType != 'standalone' && assessmentType !== 'Competency' &&
         <div className="card-elevated p-4">
           <div className="flex  items-center mb-3">
-            <h3 className="text-sm font-medium text-foreground">Course DO ID
+            <h3 className="text-sm font-medium text-foreground">Course name(s)
               <span className="text-destructive">*</span></h3>
             <Tooltip
-              title="Select the course this assessment belongs to. Only one course can be selected."
+              title="Select the course for this assessment."
               arrow
               placement="top"
               componentsProps={{
@@ -575,8 +699,6 @@ const toggleSubTheme = (subTheme: any) => {
                   value={courseQuery}
                   onValueChange={(value) => {
                     setCourseQuery(value);
-                    setCourseOffset(0);
-                    setHasMoreCourses(true);
                   }}
                 />
                 <CommandList
@@ -591,17 +713,7 @@ const toggleSubTheme = (subTheme: any) => {
                 }}>
                   <CommandEmpty>No course found.</CommandEmpty>
                   <CommandGroup>
-                    {isCoursesLoading && (
-                      <div className="py-2 text-center text-xs text-muted-foreground">
-                        Loading more courses...
-                      </div>
-                    )}
-
-                    {!hasMoreCourses && (
-                      <div className="py-2 text-center text-xs text-muted-foreground">
-                        No more courses
-                      </div>
-                    )}
+                  
                     {availableCourseIds.map((course : any) => (
                       <CommandItem
                         key={course.value}
@@ -612,16 +724,29 @@ const toggleSubTheme = (subTheme: any) => {
                         <div className={cn(
                           "w-4 h-4 rounded border mr-2 flex items-center justify-center",
                           courseIds.includes(course.value)
-                            ? "bg-primary border-primary"
-                            : "border-muted-foreground/30"
+                            ? "bg-primary border-primary hover:border-secondary/40"
+                            : " hover:border-secondary/40"
                         )}>
                           {courseIds.includes(course.value) && (
-                            <Check className="w-3 h-3 text-primary-foreground" />
+                            <Check className="w-3 h-3 text-primary-foreground hover:border-secondary/40" />
                           )}
                         </div>
                         {course.label}  {course.status == "Draft" ? "- Draft" : ""}
                       </CommandItem>
                     ))}
+                      {isCoursesLoading && (
+                      <div className="py-2 text-center text-xs text-muted-foreground">
+                        Loading more courses...
+                      </div>
+                    )}
+
+                    {!isCoursesLoading &&
+    !hasMoreCourses &&
+    availableCourseIds.length <= 0 && (
+      <div className="py-2 text-center text-xs text-muted-foreground">
+        No more courses
+      </div>
+    )}
                   </CommandGroup>
                 </CommandList>
               </Command>
@@ -632,15 +757,13 @@ const toggleSubTheme = (subTheme: any) => {
           {courseIds.length > 1 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {courseIds.map((id) => {
-                const course = availableCourseIds.find(c => c.value === id);
-
                 return (
                   <Badge
                     key={id}
                     variant="secondary"
                     className="text-xs px-2 py-1 flex items-center gap-1"
                   >
-                    {course?.label ?? id}
+                    {getCourseName(id)}
 
                     <button
                       onClick={() => removeCourseId(id)}
@@ -689,7 +812,7 @@ const toggleSubTheme = (subTheme: any) => {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-book-open w-4 h-4 text-primary"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
             <h3 className="text-sm font-medium text-foreground">Learning Outcomes</h3>
             <Tooltip
-              title="Learning outcomes mapped to the selected course(s)"
+              title="Learning outcomes mapped to the selected course"
               arrow
               placement="top"
               componentsProps={{
@@ -778,15 +901,13 @@ const toggleSubTheme = (subTheme: any) => {
           {/* Course Rows */}
           <div className="space-y-3">
             {courseIds.map((id) => {
-              const course = availableCourseIds.find((c) => c.value === id);
-
               return (
                 <div
                   key={id}
                   className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/20 justify-between"
                 >
                   <span className="text-sm text-foreground">
-                    {course?.label || id}
+                    {getCourseName(id)}
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -1121,7 +1242,7 @@ const toggleSubTheme = (subTheme: any) => {
       <div className="card-elevated p-4">
         <div className="flex items-center mb-3">
           <h3 className="text-sm font-medium text-foreground">
-            Key Themes/Modules
+            Key Learning Areas
             <span className="text-destructive">*</span>
           </h3>
 
@@ -1405,7 +1526,7 @@ const toggleSubTheme = (subTheme: any) => {
           <div className="flex items-center">
             <h3 className="text-sm font-medium text-foreground">Supporting Documents {assessmentType == 'standalone' && <span className="text-destructive">*</span>}</h3>
             <Tooltip
-              title="Upload additional PDFs or reference materials such as policy documents, scheme guidelines, circulars, or case studies. These help generate questions aligned with real policy contexts."
+              title="Upload additional PDFs or reference materials such as policy documents, scheme guidelines, circulars, case studies, etc. These help generate questions aligned with real policy contexts."
               placement="top"
               componentsProps={{
                 tooltip: {
