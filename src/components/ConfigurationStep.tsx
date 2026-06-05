@@ -118,7 +118,7 @@ const ConfigurationStep = ({
             <div className="flex items-center gap-2">
               <ListChecks className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-medium">Question Types</h3>
-               <Tooltip
+               {/* <Tooltip
               title="Multiple Choice: Select one correct answer. Multiple Select: Select all correct answers. Configure the types and count of questions to generate."
               arrow
               placement="top"
@@ -155,7 +155,7 @@ const ConfigurationStep = ({
                 <path d="M12 16v-4"></path>
                 <path d="M12 8h.01"></path>
               </svg>
-            </Tooltip>
+            </Tooltip> */}
             </div>
             <Badge variant="secondary" className="text-xs">{totalQuestions} total</Badge>
           </div>
@@ -194,14 +194,20 @@ const ConfigurationStep = ({
                     </span>
                   </div>
                   {qt.enabled && (
-                    <Input
-                      type="number"
-                      min="0"
-                      max="50"
-                      value={qt.count}
-                      onChange={(e) => updateQuestionCount(qt.id, parseInt(e.target.value) || 0)}
-                      className="w-14 h-8 text-center text-sm"
-                    />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="25"
+                    value={qt.count}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === "" || (Number(value) >= 0 && Number(value) <= 25)) {
+                        updateQuestionCount(qt.id, Number(value) || 0);
+                      }
+                    }}
+                    className="w-14 h-8 text-center text-sm"
+                  />
                   )}
                 </div>
               );

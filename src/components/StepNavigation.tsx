@@ -38,25 +38,33 @@ const StepNavigation = ({ currentStep, onStepChange, completedSteps,courseIds, t
     return stepIndex === 0;
   };
 
+  const isNavigatingBackward = (stepId: string) => {
+    const stepIndex = steps.findIndex(s => s.id === stepId);
+    const currentIndex = steps.findIndex(s => s.id === currentStep);
+    return stepIndex < currentIndex;
+  };
+
   return (
     <div className="flex items-center justify-center gap-2 mb-6 p-1.5 bg-muted/50 rounded-xl">
       {steps.map((step, index) => {
         const isActive = currentStep === step.id;
         const isCompleted = completedSteps.includes(step.id);
         const isClickable = canNavigateTo(step.id);
+        const isGoingBack = isNavigatingBackward(step.id);
+        const shouldDisable = !isClickable || (!isGoingBack && !isCompleted && !canProceed);
 
         return (
           <div key={step.id} className="flex items-center gap-2">
             <button
               onClick={() => isClickable && onStepChange(step.id)}
-              disabled={!isClickable || !canProceed}
+              disabled={shouldDisable}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive && "bg-card text-primary shadow-soft",
                 !isActive && isCompleted && "text-accent hover:bg-card/50",
                 !isActive && !isCompleted && "text-muted-foreground",
-                !isClickable && !canProceed && "opacity-50 cursor-not-allowed",
-                isClickable && !isActive && "cursor-pointer hover:text-foreground"
+                shouldDisable && "opacity-50 cursor-not-allowed",
+                isClickable && !isActive && !shouldDisable && "cursor-pointer hover:text-foreground"
               )}
             >
               {isCompleted && !isActive ? (

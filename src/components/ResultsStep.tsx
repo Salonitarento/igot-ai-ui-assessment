@@ -449,7 +449,7 @@ const ResultsStep = ({
         <div className="divide-y divide-border">
           {questions?.map((q) => {
             const typeMap: Record<string, string> = {
-              "MCQ": "Multiple Choice Question",
+              "MCQ": "Single selection MCQs",
               "FTB": "FTB Question",
               "MTF": "MTF Question",
               "MULTICHOICE": "Multi-Choice Question",

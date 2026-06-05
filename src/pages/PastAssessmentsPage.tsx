@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
 import "react-day-picker/dist/style.css";
 import { DayPicker } from "react-day-picker";
@@ -104,7 +105,8 @@ const handleView = (jobId : string) => {
           type: config.assessment_type
             ? config.assessment_type.charAt(0).toUpperCase() + config.assessment_type.slice(1)
             : "—",
-          course: item.course_names[0], // You can update this if you have course info in API
+          course: item.course_names[0], // Display first course
+          courseNames: item.course_names || [], // Store all course names for tooltip
           date: createdAt
             ? createdAt.toLocaleDateString("en-GB", {
               day: "2-digit",
@@ -205,7 +207,8 @@ const handleView = (jobId : string) => {
 
 
   return (
-    <div className="container mx-auto lg:px-4 md:px-2 sm:px-1 py-6 max-w-4xl">
+    <TooltipProvider>
+      <div className="container mx-auto lg:px-4 md:px-2 sm:px-1 py-6 max-w-4xl">
 
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
@@ -405,7 +408,7 @@ const handleView = (jobId : string) => {
           >
             <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-sky-500"></div>
             {/* Assessment */}
-            <div className="col-span-2 pl-2">
+            <div className="col-span-2">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-semibold bg-muted text-muted-foreground">
                   {index + 1}
@@ -427,9 +430,31 @@ const handleView = (jobId : string) => {
 
             {/* Course */}
             <div className="col-span-2">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-book-open w-3.5 h-3.5 text-muted-foreground shrink-0"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
-                <span className="text-sm text-foreground truncate">{a.course}</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm text-foreground truncate block">{a.course}</span>
+                      {a.courseNames && a.courseNames.length > 1 && (
+                        <span className="text-xs text-muted-foreground">+{a.courseNames.length - 1} more</span>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    <div className="space-y-1">
+                      {a.courseNames && a.courseNames.length > 0 ? (
+                        a.courseNames.map((course: string, idx: number) => (
+                          <div key={idx} className="text-sm">
+                            {course}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm">{a.course}</div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -483,7 +508,8 @@ const handleView = (jobId : string) => {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
 

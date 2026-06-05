@@ -13,11 +13,11 @@ import { ACCESS_TOKEN_2 } from "@/components/ConstantAPI";
 import { useLocation } from "react-router-dom";
 
 const defaultQuestionTypes = [
-  { id: "mcq", name: "Multiple Choice", icon: ListChecks, enabled: true, count: 10 },
+  { id: "mcq", name: "Single selection MCQs", icon: ListChecks, enabled: true, count: 10 },
   { id: "ftb", name: "Fill in the blanks", icon: ToggleLeft, enabled: true, count: 5 },
   { id: "mtf", name: "Match the following", icon: Link2 , enabled: false, count: 1 },
   { id: "truefalse", name: "True/False", icon: ToggleLeft, enabled: false, count: 1 },
-  { id: "multichoice", name: "Multi Select Questions", icon: SquareCheckBig, enabled: false, count: 1 },
+  { id: "multichoice", name: "Multiple selection MCQs", icon: SquareCheckBig, enabled: false, count: 1 },
   // { id: "essay", name: "Essay", icon: FileText, enabled: false, count: 0 },
 ];
 
@@ -277,7 +277,22 @@ const Index = ({userDetails}) => {
       });
 
       if (!response.ok) {
-        throw new Error("Generation failed");
+        let errorMessage = "Unable to generate assessment, please try again.";
+        
+        if (response.status === 422) {
+          errorMessage = "Invalid input provided. Please check your selections and try again.";
+        } else if (response.status === 500) {
+          errorMessage = "Server error occurred. Please try again later.";
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        setIsGenerating(false);
+        return;
       }
 
 
@@ -335,6 +350,11 @@ const Index = ({userDetails}) => {
 
     } catch (error) {
       console.error(error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
       setIsGenerating(false);
     }
   };
@@ -416,6 +436,7 @@ const Index = ({userDetails}) => {
               setAssessmentType(type);
               setLearningOutcomes([]);
               setCourseIds([]);
+              setTopics([]);
             }}
             currentStep={currentStep}
           />
@@ -435,6 +456,7 @@ const Index = ({userDetails}) => {
           <ContentInputStep
             assessmentType={assessmentType}
             courseIds={courseIds}
+            courseNames={courseNames}
             topics={topics}
             notes={notes}
             transcriptFiles={transcriptFiles}
