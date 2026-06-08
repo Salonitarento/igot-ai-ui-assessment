@@ -73,17 +73,44 @@ const ConfigurationStep = ({
 
 
   const toggleQuestionType = (id: string) => {
+    const currentTotal = questionTypes
+      .filter((qt) => qt.enabled)
+      .reduce((sum, qt) => sum + qt.count, 0);
+
     onQuestionTypesChange(
-      questionTypes.map((qt) =>
-        qt.id === id ? { ...qt, enabled: !qt.enabled } : qt
-      )
+      questionTypes.map((qt) => {
+        if (qt.id !== id) return qt;
+
+      if (qt.enabled) {
+          return { ...qt, enabled: false };
+        }
+
+        const remaining = 25 - currentTotal;
+
+        return {
+          ...qt,
+          enabled: remaining > 0,
+          count: remaining > 0 ? Math.min(qt.count || 1, remaining) : 0,
+        };
+      })
     );
   };
 
   const updateQuestionCount = (id: string, count: number) => {
+    const otherQuestionsTotal = questionTypes
+      .filter((qt) => qt.enabled && qt.id !== id)
+      .reduce((sum, qt) => sum + qt.count, 0);
+
+    const maxAllowedForCurrent = 25 - otherQuestionsTotal;
+
     onQuestionTypesChange(
       questionTypes.map((qt) =>
-        qt.id === id ? { ...qt, count: Math.max(0, count) } : qt
+        qt.id === id
+          ? {
+              ...qt,
+              count: Math.max(0, Math.min(count, maxAllowedForCurrent)),
+            }
+          : qt
       )
     );
   };
@@ -197,14 +224,10 @@ const ConfigurationStep = ({
                   <Input
                     type="number"
                     min="0"
-                    max="25"
+                    max={25}
                     value={qt.count}
                     onChange={(e) => {
-                      const value = e.target.value;
-
-                      if (value === "" || (Number(value) >= 0 && Number(value) <= 25)) {
-                        updateQuestionCount(qt.id, Number(value) || 0);
-                      }
+                      updateQuestionCount(qt.id, parseInt(e.target.value) || 0);
                     }}
                     className="w-14 h-8 text-center text-sm"
                   />
