@@ -1075,11 +1075,11 @@ const toggleSubTheme = (subTheme: any) => {
                             className={`w-4 h-4 rounded border mr-2 flex items-center justify-center
                       ${selected
                                 ? "bg-primary border-primary"
-                                : "border-muted-foreground/30"
+                                : "hover:border-secondary/40"
                               }`}
                           >
                             {selected && (
-                              <Check className="w-3 h-3 text-primary-foreground" />
+                              <Check className="w-3 h-3 text-primary-foreground hover:border-secondary/40" />
                             )}
                           </div>
 
@@ -1098,7 +1098,7 @@ const toggleSubTheme = (subTheme: any) => {
                 <Badge
                   key={theme.identifier}
                   variant="secondary"
-                  className="text-xs px-2 py-1 flex items-center gap-1"
+                  className="text-xs px-2 py-1 flex items-center gap-1 "
                 >
                   {theme.name}
 
@@ -1195,7 +1195,7 @@ const toggleSubTheme = (subTheme: any) => {
                             className={`w-4 h-4 rounded border mr-2 flex items-center justify-center
                       ${selected
                                 ? "bg-primary border-primary"
-                                : "border-muted-foreground/30"
+                                : "hover:border-secondary/40"
                               }`}
                           >
                             {selected && (
