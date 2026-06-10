@@ -177,3 +177,21 @@
 }
 .stagger-children > *:nth-child(5) { animation-delay: 0.15s; }
 .stagger-children > *:nth-child(6) { animation-delay: 0.18s; }
+@media (max-width: 1100px) and (min-width: 640px) {
+  .command-list {
+    height: 200px !important;
+  }
+}
+@media (max-width: 1300px) and (min-width: 1100px) {
+  .command-list {
+    height: 200px !important;
+  }
+}
+@media (max-width: 1500px) and (min-width: 1300px) {
+  .command-list {
+    height: 250px !important;
+  }
+}
+.command-list {
+  height: 350px ;
+}
