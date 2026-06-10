@@ -36,6 +36,7 @@ interface QuestionOption {
 
 interface Question {
   id: number;
+  questionId?: string;
   type: string;
   bloomLevel: string;
   bloomPercent: number;
@@ -200,6 +201,7 @@ const ResultsStep = ({
   const [editForm, setEditForm] = useState<Question | null>(null);
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [csvVariant, setCsvVariant] = useState<"basic" | "advance">("basic");
+  console.log('assessmentData', assessmentData)
 
   const toggleQuestion = (id: number) => {
     setExpandedQuestions(prev =>
@@ -448,22 +450,40 @@ const ResultsStep = ({
         <div className="divide-y divide-border">
           {questions?.map((q) => {
             const typeMap: Record<string, string> = {
-              "MCQ": "Single selection MCQs",
+              "MCQ": "Multiple Choice Question",
               "FTB": "FTB Question",
               "MTF": "MTF Question",
               "MULTICHOICE": "Multi-Choice Question",
               "TRUEFALSE": "True/False Question"
             };
             const rawType = typeMap[q.type] || Object.keys(assessmentData?.questions || {}).find(k => k.toUpperCase().includes(q.type));
+            console.log('rawType', rawType , assessmentData)
             const rawList = assessmentData?.questions?.[rawType] || [];
-            const raw = rawList.find((item: any) =>
-              (item.question_text && item.question_text === q.question) ||
-              (item.matching_context && item.matching_context === q.question)
-            ) || rawList[q.id - 1]; // fallback by index
+            console.log('rawList', rawList)
+           let raw;
 
+if (q.type === "MTF") {
+  raw = rawList.find(
+    (item: any) => item.question_id === q.questionId
+  );
+} else {
+  raw =
+    rawList.find((item: any) =>
+      (item.question_text && item.question_text === q.question)
+    ) || rawList[0];
+}
+console.log('MTF q.question', q.question);
+console.log('MTF matching_context', rawList);
+console.log('Matched raw', raw);
+console.log('q.question ===========', q.question);
+console.log(
+  'matching contexts ==========',
+  rawList.map((x: any) => x.matching_context)
+);
             // Extract details for use in your UI
             const questionText = raw?.question_text || raw?.matching_context || "";
             let correctAnswerText = "";
+            console.log('questions', q)
             if (q.type === "MCQ" && raw?.correct_option_index !== undefined) {
               correctAnswerText = raw.options?.[raw.correct_option_index]?.text || "";
             } else if (q.type === "FTB") {
@@ -479,6 +499,7 @@ const ResultsStep = ({
               correctAnswerText = raw?.correct_answer;
             }
             const rationale = raw?.answer_rationale?.correct_answer_explanation;
+            console.log('rationale', rationale)
             const whyFactor = raw?.answer_rationale?.why_factor;
             const logicJustification = raw?.answer_rationale?.logic_justification;
             const bloomsLevel = raw?.blooms_level;

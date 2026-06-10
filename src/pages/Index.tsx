@@ -59,6 +59,7 @@ const normalizeQuestions = (rawQuestions: any[]) => {
 
     return {
       id: index + 1,
+      questionId: q.question_id,
       type,
       bloomLevel: q.blooms_level ? q.blooms_level.charAt(0).toUpperCase() + q.blooms_level.slice(1) : "Remember",
       bloomPercent: q.relevance_percentage ?? 0,
@@ -99,6 +100,9 @@ const Index = ({userDetails}) => {
   const [timeLimit, setTimeLimit] = useState(30);
   const [bloomEnabled, setBloomEnabled] = useState(true);
 
+  const [competencyArea, setCompetencyArea] = useState<string | null>(null);
+  const [competencyThemes, setCompetencyThemes] = useState<any[]>([]);
+  const [competencySubThemes, setCompetencySubThemes] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -240,9 +244,21 @@ const Index = ({userDetails}) => {
       JSON.stringify(questionTypeCounts)
     );
 
-    formData.append("course_ids", courseIds);
-    formData.append("course_names", courseNames.join(","));
-    console.log('courseNames.join(",")', typeof(courseNames.join(",")))
+    const isCompetency = assessmentType.toLowerCase() === "competency";
+    if (!isCompetency) {
+      formData.append("course_ids", courseIds);
+      formData.append("course_names", courseNames.join(","));
+    } else {
+      if (competencyArea) {
+        formData.append("competency_area", competencyArea);
+      }
+      competencyThemes.forEach((theme: any) => {
+        formData.append("competency_themes", theme.name);
+      });
+      competencySubThemes.forEach((subTheme: any) => {
+        formData.append("competency_sub_themes", subTheme.name);
+      });
+    }
     const force: any = (source == 'generate') ? false : true
     formData.append("force", force);
 
@@ -382,6 +398,9 @@ const Index = ({userDetails}) => {
     });
     setTimeLimit(30);
     setIsGenerated(false);
+    setCompetencyArea(null);
+    setCompetencyThemes([]);
+    setCompetencySubThemes([]);
   };
 
   const totalQuestions = isGenerated && questions?.length > 0
@@ -473,6 +492,12 @@ const Index = ({userDetails}) => {
             userDetails={userDetails}
             setLearningOutcomes={setLearningOutcomes}
             learningOutcomes={learningOutcomes}
+            selectedCompetency={competencyArea}
+            onCompetencyChange={setCompetencyArea}
+            selectedThemes={competencyThemes}
+            onThemesChange={setCompetencyThemes}
+            selectedSubThemes={competencySubThemes}
+            onSubThemesChange={setCompetencySubThemes}
           />
         )}
 

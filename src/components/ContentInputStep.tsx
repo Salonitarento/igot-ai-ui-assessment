@@ -41,6 +41,12 @@ interface ContentInputStepProps {
   onMaterialFilesChange: (files: File[]) => void;
   onNext: () => void;
   userDetails: any;
+  selectedCompetency: string | null;
+  onCompetencyChange: (competency: string | null) => void;
+  selectedThemes: any[];
+  onThemesChange: (themes: any[]) => void;
+  selectedSubThemes: any[];
+  onSubThemesChange: (subThemes: any[]) => void;
 }
 interface CourseOption {
   value: string; // identifier
@@ -67,7 +73,13 @@ const ContentInputStep = ({
   onNext,
   userDetails,
   learningOutcomes,
-  setLearningOutcomes
+  setLearningOutcomes,
+  selectedCompetency,
+  onCompetencyChange,
+  selectedThemes,
+  onThemesChange,
+  selectedSubThemes,
+  onSubThemesChange,
 }: ContentInputStepProps) => {
   const [newTopic, setNewTopic] = useState("");
   const [courseSearchOpen, setCourseSearchOpen] = useState(false);
@@ -79,12 +91,9 @@ const ContentInputStep = ({
   const [hasMoreCourses, setHasMoreCourses] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
   const [openTheme, setOpenTheme] = useState(false);
-  const [selectedThemes, setSelectedThemes] = useState<any[]>([]);
   const [searchTheme, setSearchTheme] = useState("");
   const [openSubTheme, setOpenSubTheme] = useState(false);
-  const [selectedSubThemes, setSelectedSubThemes] = useState<any[]>([]);
   const [searchSubTheme, setSearchSubTheme] = useState("");
   const [courseWeights, setCourseWeights] = useState<Record<string, number>>({});
   const [courseNameMap, setCourseNameMap] = useState<Record<string, string>>({}); // Maps course ID to display name
@@ -201,10 +210,10 @@ setAllThemeData(allThemeCategory);
     }
   };
 const handleCompetencySelect = (item: any) => {
-  setSelectedCompetency(item.name);
+  onCompetencyChange(item.name);
 
-  setSelectedThemes([]);
-  setSelectedSubThemes([]);
+  onThemesChange([]);
+  onSubThemesChange([]);
   setAllSubThemes([]);
 
   const themes = item?.associations || [];
@@ -590,9 +599,9 @@ const toggleTheme = (theme: any) => {
     updatedThemes = [...selectedThemes, theme];
   }
 
-  setSelectedThemes(updatedThemes);
+  onThemesChange(updatedThemes);
 
-  setSelectedSubThemes([]);
+  onSubThemesChange([]);
 
 const subThemes = updatedThemes.flatMap((theme: any) => {
   const matchedTheme = allThemeData.find(
@@ -614,11 +623,10 @@ const filteredSubThemes = useMemo(() => {
 }, [allSubThemes, searchSubTheme]);
 
 const toggleSubTheme = (subTheme: any) => {
-  setSelectedSubThemes((prev: any[]) =>
-    prev.some((t) => t.identifier === subTheme.identifier)
-      ? prev.filter((t) => t.identifier !== subTheme.identifier)
-      : [...prev, subTheme]
-  );
+  const newSubThemes = selectedSubThemes.some((t: any) => t.identifier === subTheme.identifier)
+    ? selectedSubThemes.filter((t: any) => t.identifier !== subTheme.identifier)
+    : [...selectedSubThemes, subTheme];
+  onSubThemesChange(newSubThemes);
 };
 
   const handleWeightChange = (courseId: string, value: string) => {
@@ -688,9 +696,17 @@ const toggleSubTheme = (subTheme: any) => {
 
             </PopoverTrigger>
             <PopoverContent
-              className="p-0 bg-popover border shadow-lg"
+              side="bottom"
               align="start"
-              style={{ width: 'var(--radix-popover-trigger-width)', maxWidth: 'var(--radix-popover-content-available-width)' }}
+              sideOffset={4}
+              avoidCollisions={true}
+              collisionPadding={20}
+              className="p-0 bg-popover border shadow-lg"
+              style={{
+                width: "var(--radix-popover-trigger-width)",
+                maxHeight: "70vh",
+                overflow: "hidden",
+              }}
             >
               <Command>
                 <CommandInput
@@ -702,7 +718,7 @@ const toggleSubTheme = (subTheme: any) => {
                   }}
                 />
                 <CommandList
-                  className="popover-command-list"
+                  className="max-h-[60vh] overflow-y-auto"
                   onScroll={(e) => {
                   const target = e.currentTarget;
                   if (
