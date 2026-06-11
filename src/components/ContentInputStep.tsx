@@ -116,6 +116,28 @@ const [allThemes, setAllThemes] = useState<any[]>([]);
 const [allSubThemes, setAllSubThemes] = useState<any[]>([]);
 const [allThemeData, setAllThemeData] = useState<any[]>([]);
  console.log('availableCourseIds', availableCourseIds)
+ const courseTriggerRef = useRef<HTMLButtonElement>(null);
+ useEffect(() => {
+  const handleScroll = () => {
+    if (!courseSearchOpen || !courseTriggerRef.current) return;
+
+    const header = document.getElementById("app-header");
+    if (!header) return;
+
+    const headerBottom = header.getBoundingClientRect().bottom;
+    const triggerTop = courseTriggerRef.current.getBoundingClientRect().top;
+
+    if (triggerTop <= headerBottom) {
+      setCourseSearchOpen(false);
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+  };
+}, [courseSearchOpen]);
 
 // Initialize courseNameMap when courseNames are passed in (e.g., on page load after generation)
 useEffect(() => {
@@ -682,6 +704,7 @@ const toggleSubTheme = (subTheme: any) => {
           <Popover open={courseSearchOpen} onOpenChange={setCourseSearchOpen}>
             <PopoverTrigger asChild>
               <Button
+                  ref={courseTriggerRef}
                 variant="outline"
                 role="combobox"
                 aria-expanded={courseSearchOpen}
@@ -700,8 +723,13 @@ const toggleSubTheme = (subTheme: any) => {
               align="start"
               sideOffset={4}
               avoidCollisions={true}
-              collisionPadding={20}
-              className="p-0 bg-popover border shadow-lg"
+                collisionPadding={{
+    top: 70,
+    bottom: 20,
+    left: 20,
+    right: 20,
+  }}
+              className="p-0 bg-popover border shadow-lg z-[27]"
               style={{
                 width: "var(--radix-popover-trigger-width)",
                 maxHeight: "70vh",
