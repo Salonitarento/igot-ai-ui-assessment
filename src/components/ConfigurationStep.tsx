@@ -90,7 +90,8 @@ const ConfigurationStep = ({
         return {
           ...qt,
           enabled: remaining > 0,
-          count: remaining > 0 ? Math.min(qt.count || 1, remaining) : 0,
+            count: remaining > 0 ? Math.max(1, Math.min(qt.count || 1, remaining)) : 0,
+
         };
       })
     );
@@ -108,7 +109,7 @@ const ConfigurationStep = ({
         qt.id === id
           ? {
               ...qt,
-              count: Math.max(0, Math.min(count, maxAllowedForCurrent)),
+              count: Math.max(1, Math.min(count, maxAllowedForCurrent)),
             }
           : qt
       )
@@ -223,11 +224,11 @@ const ConfigurationStep = ({
                   {qt.enabled && (
                   <Input
                     type="number"
-                    min="0"
+                    min="1"
                     max={25}
                     value={qt.count}
                     onChange={(e) => {
-                      updateQuestionCount(qt.id, parseInt(e.target.value) || 0);
+                      updateQuestionCount(qt.id, parseInt(e.target.value) || 1);
                     }}
                     className="w-14 h-8 text-center text-sm"
                   />
