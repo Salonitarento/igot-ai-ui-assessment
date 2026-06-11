@@ -264,9 +264,48 @@ const ConfigurationStep = ({
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-medium">Time Limit</h3>
+               <Tooltip
+               title= "The time limit must be at least 5 minutes and cannot exceed 90 minutes."
+              arrow
+              placement="top"
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "#fff",
+                    color: "#000",
+                    fontSize: "14px",
+                    padding: "8px 12px",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.15)"
+                  }
+                },
+                arrow: {
+                  sx: {
+                    color: "#fff"
+                  }
+                }
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-info w-4 h-4 text-muted-foreground cursor-help ml-3"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+            </Tooltip>
             </div>
 
             <div className="flex items-center gap-3">
+            
               <div className="flex items-center gap-2 flex-1">
                 <Input
                   type="number"
